@@ -1,6 +1,7 @@
+pub use super::Int256;
 use num::traits::ops::checked::{CheckedAdd, CheckedDiv, CheckedMul, CheckedSub};
-use num::Num;
 use num::{BigInt, BigUint};
+use num::{Num, Zero};
 use serde;
 use serde::ser::Serialize;
 use serde::{Deserialize, Deserializer, Serializer};
@@ -8,14 +9,22 @@ use std::fmt;
 use std::ops::{Add, AddAssign, Deref, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
 use std::str::FromStr;
 
-pub use super::Int256;
-
-#[derive(Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Uint256(pub BigUint);
 
 impl Uint256 {
     pub fn from_bytes_le(slice: &[u8]) -> Uint256 {
         Uint256(BigUint::from_bytes_le(slice))
+    }
+}
+
+impl Zero for Uint256 {
+    fn zero() -> Uint256 {
+        Uint256(BigUint::zero())
+    }
+
+    fn is_zero(&self) -> bool {
+        self.0.is_zero()
     }
 }
 
@@ -37,6 +46,24 @@ impl fmt::Display for Uint256 {
 impl fmt::Debug for Uint256 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "Uint256({})", self.to_string())
+    }
+}
+
+impl fmt::LowerHex for Uint256 {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        if f.alternate() {
+            write!(f, "0x")?;
+        }
+        write!(f, "{}", self.0.to_str_radix(16))
+    }
+}
+
+impl fmt::UpperHex for Uint256 {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        if f.alternate() {
+            write!(f, "0x")?;
+        }
+        write!(f, "{}", self.0.to_str_radix(16).to_uppercase())
     }
 }
 
@@ -76,6 +103,12 @@ impl<'de> Deserialize<'de> for Uint256 {
 impl From<Int256> for Uint256 {
     fn from(n: Int256) -> Self {
         Uint256(n.0.to_biguint().unwrap())
+    }
+}
+
+impl From<[u8; 32]> for Uint256 {
+    fn from(n: [u8; 32]) -> Uint256 {
+        Uint256(BigUint::from_bytes_be(&n))
     }
 }
 
@@ -252,4 +285,43 @@ impl CheckedDiv for Uint256 {
         let num = self.0.clone() / v.0.clone();
         Some(Uint256(num))
     }
+}
+
+#[test]
+fn create_from_32_bytes() {
+    let lhs: [u8; 32] = [
+        0x42, 0x42, 0x42, 0x42, 0x42, 0x42, 0x42, 0x42, 0x42, 0x42, 0x42, 0x42, 0x42, 0x42, 0x42,
+        0x42, 0x42, 0x42, 0x42, 0x42, 0x42, 0x42, 0x42, 0x42, 0x42, 0x42, 0x42, 0x42, 0x42, 0x42,
+        0x42, 0x42,
+    ];
+    let lhs: Uint256 = lhs.into();
+    assert_eq!(
+        lhs,
+        "4242424242424242424242424242424242424242424242424242424242424242"
+            .parse()
+            .unwrap()
+    );
+}
+
+#[test]
+fn to_hex() {
+    let lhs: Uint256 = "babababababababababababababababababababababababababababababababa"
+        .parse()
+        .unwrap();
+    assert_eq!(
+        format!("{:#x}", lhs),
+        "0xbabababababababababababababababababababababababababababababababa"
+    );
+    assert_eq!(
+        format!("{:x}", lhs),
+        "babababababababababababababababababababababababababababababababa"
+    );
+    assert_eq!(
+        format!("{:X}", lhs),
+        "BABABABABABABABABABABABABABABABABABABABABABABABABABABABABABABABA"
+    );
+    assert_eq!(
+        format!("{:#X}", lhs),
+        "0xBABABABABABABABABABABABABABABABABABABABABABABABABABABABABABABABA"
+    );
 }
