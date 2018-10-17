@@ -1,8 +1,7 @@
-extern crate ethereum_types;
 extern crate num;
 extern crate serde;
 
-use num::bigint::{BigInt, BigUint, ToBigInt};
+use num::bigint::{BigInt, ToBigInt};
 use num::traits::ops::checked::{CheckedAdd, CheckedDiv, CheckedMul, CheckedSub};
 use num::traits::Signed;
 use num::ToPrimitive;
@@ -47,13 +46,10 @@ impl Neg for Int256 where {
 
 impl From<Uint256> for Int256 {
     fn from(n: Uint256) -> Self {
-        let mut bytes = [0u8; 32];
-        n.to_big_endian(&mut bytes);
-        let n = BigUint::from_bytes_be(&bytes);
         if n.bits() > 255 {
-            panic!("Overflow")
+            panic!("Overflow");
         }
-        Int256(BigInt::from(n))
+        Int256(n.to_bigint().unwrap())
     }
 }
 

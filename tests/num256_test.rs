@@ -5,7 +5,6 @@ extern crate num;
 extern crate serde_json;
 #[macro_use]
 extern crate serde_derive;
-extern crate ethereum_types;
 extern crate serde;
 
 use num::pow::pow;
@@ -16,13 +15,13 @@ use num256::{Int256, Uint256};
 use std::ops::{Add, Div, Sub};
 
 lazy_static! {
-    static ref BIGGEST_UINT: Uint256 = Uint256::from_little_endian(&[255u8; 32]);
+    static ref BIGGEST_UINT: Uint256 = Uint256::from_bytes_le(&[255u8; 32]);
     static ref BIGGEST_INT: Int256 = Int256(pow(BigInt::from(2), 255) - BigInt::from(1));
     static ref SMALLEST_INT: Int256 = Int256(pow(BigInt::from(-2), 255) + BigInt::from(1));
     static ref BIGGEST_INT_AS_UINT: Uint256 = {
         let mut biggest_int_le = [255u8; 32];
         biggest_int_le[31] = 127;
-        Uint256::from_little_endian(&biggest_int_le)
+        Uint256::from_bytes_le(&biggest_int_le)
     };
 }
 
@@ -210,13 +209,15 @@ fn test_uint256() {
     let num = &Uint256::from(1 as u32)
         .checked_sub(&Uint256::from(1 as u32))
         .unwrap()
-        .as_u32();
+        .to_u32()
+        .unwrap();
     assert_eq!(*num, 0, "1 - 1 should = 0");
 
     let num2 = &Uint256::from(346 as u32)
         .checked_sub(&Uint256::from(23 as u32))
         .unwrap()
-        .as_u32();
+        .to_u32()
+        .unwrap();
 
     assert_eq!(*num2, 323, "346 - 23 should = 323");
 }

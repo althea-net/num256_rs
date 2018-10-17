@@ -1,5 +1,6 @@
-use ethereum_types::U256;
 use num::traits::ops::checked::{CheckedAdd, CheckedDiv, CheckedMul, CheckedSub};
+use num::Num;
+use num::{BigInt, BigUint};
 use serde;
 use serde::ser::Serialize;
 use serde::{Deserialize, Deserializer, Serializer};
@@ -10,24 +11,18 @@ use std::str::FromStr;
 pub use super::Int256;
 
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Uint256(pub U256);
+pub struct Uint256(pub BigUint);
 
 impl Uint256 {
-    pub fn from_little_endian(slice: &[u8]) -> Uint256 {
-        Uint256(U256::from_little_endian(slice))
-    }
-    pub fn to_big_endian(&self, bytes: &mut [u8]) {
-        self.0.to_big_endian(bytes);
-    }
-    pub fn to_hex(&self) -> String {
-        format!("{:x}", self.0)
+    pub fn from_bytes_le(slice: &[u8]) -> Uint256 {
+        Uint256(BigUint::from_bytes_le(slice))
     }
 }
 
 impl FromStr for Uint256 {
     type Err = String;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        U256::from_str(s)
+        BigUint::from_str(s)
             .map(Uint256)
             .map_err(|e| format!("{:?}", e))
     }
@@ -46,9 +41,9 @@ impl fmt::Debug for Uint256 {
 }
 
 impl Deref for Uint256 {
-    type Target = U256;
+    type Target = BigUint;
 
-    fn deref(&self) -> &U256 {
+    fn deref(&self) -> &BigUint {
         &self.0
     }
 }
@@ -72,7 +67,7 @@ impl<'de> Deserialize<'de> for Uint256 {
         let s = String::deserialize(deserializer)?;
         let s = if s.starts_with("0x") { &s[2..] } else { &s };
 
-        U256::from_str(&s)
+        BigUint::from_str_radix(&s, 16)
             .map(Uint256)
             .map_err(serde::de::Error::custom)
     }
@@ -80,13 +75,7 @@ impl<'de> Deserialize<'de> for Uint256 {
 
 impl From<Int256> for Uint256 {
     fn from(n: Int256) -> Self {
-        let mut bytes = n.0.to_biguint().unwrap().to_bytes_le();
-        assert!(bytes.len() <= 32);
-        let push_amount = 32 - bytes.len();
-        for _ in 0..push_amount {
-            bytes.push(0);
-        }
-        Uint256(U256::from_little_endian(&bytes))
+        Uint256(n.0.to_biguint().unwrap())
     }
 }
 
@@ -95,7 +84,7 @@ macro_rules! uint_impl_from_int {
         impl From<$T> for Uint256 {
             #[inline]
             fn from(n: $T) -> Self {
-                Uint256(U256::from(n))
+                Uint256(BigInt::from(n).to_biguint().unwrap())
             }
         }
     };
@@ -106,7 +95,7 @@ macro_rules! uint_impl_from_uint {
         impl From<$T> for Uint256 {
             #[inline]
             fn from(n: $T) -> Self {
-                Uint256(U256::from(n))
+                Uint256(BigUint::from(n))
             }
         }
     };
