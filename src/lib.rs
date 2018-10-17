@@ -1,7 +1,7 @@
 extern crate num;
 extern crate serde;
 
-use num::bigint::{BigInt, ToBigInt};
+use num::bigint::{BigInt, BigUint, ToBigInt};
 use num::traits::ops::checked::{CheckedAdd, CheckedDiv, CheckedMul, CheckedSub};
 use num::traits::Signed;
 use num::ToPrimitive;

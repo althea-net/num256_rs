@@ -352,3 +352,49 @@ fn test_int256() {
 
     assert_eq!(*num, 301, "345 - 44 should = 301");
 }
+
+#[test]
+fn test_increment_2_to_the_power_of_255() {
+    // This one was failing with ethereum_types::U256
+    let mut value: Uint256 = "7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+        .parse()
+        .unwrap();
+    assert_eq!(value.bits(), 255);
+    value += 1;
+    assert_eq!(value.bits(), 256);
+}
+
+#[test]
+#[should_panic]
+fn test_increment_2_to_the_power_of_256() {
+    let mut value: Uint256 = "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+        .parse()
+        .unwrap();
+    assert_eq!(value.bits(), 256);
+    value += 1;
+    assert_eq!(value.bits(), 256);
+}
+
+#[test]
+fn test_increment_2_to_the_power_of_256_checked() {
+    //2**256-1
+    let value: Uint256 = "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+        .parse()
+        .unwrap();
+    assert_eq!(value.bits(), 256);
+    assert!(value.checked_add(&Uint256::from(1u32)).is_none());
+}
+
+#[test]
+fn test_uint_underflow() {
+    let value: Uint256 = 0.into();
+    let res = value.checked_sub(&Uint256::from(1u32));
+    assert!(res.is_none());
+}
+
+#[test]
+#[should_panic]
+fn test_uint_underflow_assign() {
+    let mut value: Uint256 = 0.into();
+    value -= 1;
+}

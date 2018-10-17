@@ -22,7 +22,7 @@ impl Uint256 {
 impl FromStr for Uint256 {
     type Err = String;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        BigUint::from_str(s)
+        BigUint::from_str_radix(s, 16)
             .map(Uint256)
             .map_err(|e| format!("{:?}", e))
     }
@@ -132,7 +132,7 @@ where
 {
     fn add_assign(&mut self, v: T) {
         self.0 = self.0.clone() + v.into().0;
-        if self.0.bits() > 255 {
+        if self.0.bits() > 256 {
             panic!("overflow");
         }
     }
@@ -155,7 +155,7 @@ where
     type Output = Uint256;
     fn sub(self, v: T) -> Uint256 {
         let num = self.0 - v.into().0;
-        if num.bits() > 255 {
+        if num.bits() > 256 {
             panic!("overflow");
         }
         Uint256(num)
@@ -168,7 +168,7 @@ where
 {
     fn sub_assign(&mut self, v: T) {
         self.0 = self.0.clone() - v.into().0;
-        if self.0.bits() > 255 {
+        if self.0.bits() > 256 {
             panic!("overflow");
         }
     }
@@ -176,10 +176,7 @@ where
 
 impl CheckedSub for Uint256 {
     fn checked_sub(&self, v: &Uint256) -> Option<Uint256> {
-        if self.0.bits().checked_sub(v.0.bits()).is_none() {
-            return None;
-        }
-        Some(Uint256(self.0.clone() - v.0.clone()))
+        self.0.checked_sub(&v.0).map(Uint256)
     }
 }
 
@@ -190,7 +187,7 @@ where
     type Output = Uint256;
     fn mul(self, v: T) -> Uint256 {
         let num = self.0 * v.into().0;
-        if num.bits() > 255 {
+        if num.bits() > 256 {
             panic!("overflow");
         }
         Uint256(num)
@@ -203,7 +200,7 @@ where
 {
     fn mul_assign(&mut self, v: T) {
         self.0 = self.0.clone() * v.into().0;
-        if self.0.bits() > 255 {
+        if self.0.bits() > 256 {
             panic!("overflow");
         }
     }
@@ -213,7 +210,7 @@ impl CheckedMul for Uint256 {
     fn checked_mul(&self, v: &Uint256) -> Option<Uint256> {
         // drop down to wrapped bigint to stop from panicing in fn above
         let num = self.0.clone() * v.0.clone();
-        if num.bits() > 255 {
+        if num.bits() > 256 {
             return None;
         }
         Some(Uint256(num))
@@ -226,7 +223,7 @@ where
 {
     fn div_assign(&mut self, v: T) {
         self.0 = self.0.clone() / v.into().0;
-        if self.0.bits() > 255 {
+        if self.0.bits() > 256 {
             panic!("overflow");
         }
     }
@@ -239,7 +236,7 @@ where
     type Output = Uint256;
     fn div(self, v: T) -> Uint256 {
         let num = self.0 / v.into().0;
-        if num.bits() > 255 {
+        if num.bits() > 256 {
             panic!("overflow");
         }
         Uint256(num)
