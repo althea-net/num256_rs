@@ -1,4 +1,5 @@
 pub use super::Int256;
+use num::bigint::ParseBigIntError;
 use num::traits::ops::checked::{CheckedAdd, CheckedDiv, CheckedMul, CheckedSub};
 use num::{BigInt, BigUint};
 use num::{Num, Zero};
@@ -16,6 +17,12 @@ impl Uint256 {
     pub fn from_bytes_le(slice: &[u8]) -> Uint256 {
         Uint256(BigUint::from_bytes_le(slice))
     }
+    pub fn from_bytes_be(slice: &[u8]) -> Uint256 {
+        Uint256(BigUint::from_bytes_be(slice))
+    }
+    pub fn from_str_radix(s: &str, radix: u32) -> Result<Uint256, ParseBigIntError> {
+        BigUint::from_str_radix(s, radix).map(Uint256)
+    }
 }
 
 impl Zero for Uint256 {
@@ -31,9 +38,15 @@ impl Zero for Uint256 {
 impl FromStr for Uint256 {
     type Err = String;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        BigUint::from_str_radix(s, 16)
-            .map(Uint256)
-            .map_err(|e| format!("{:?}", e))
+        if s.starts_with("0x") {
+            BigUint::from_str_radix(&s[2..], 16)
+                .map(Uint256)
+                .map_err(|e| format!("{:?}", e))
+        } else {
+            BigUint::from_str_radix(&s, 10)
+                .map(Uint256)
+                .map_err(|e| format!("{:?}", e))
+        }
     }
 }
 
@@ -109,6 +122,12 @@ impl From<Int256> for Uint256 {
 impl From<[u8; 32]> for Uint256 {
     fn from(n: [u8; 32]) -> Uint256 {
         Uint256(BigUint::from_bytes_be(&n))
+    }
+}
+
+impl<'a> From<&'a [u8]> for Uint256 {
+    fn from(n: &'a [u8]) -> Uint256 {
+        Uint256(BigUint::from_bytes_be(n))
     }
 }
 
@@ -306,7 +325,7 @@ fn create_from_32_bytes() {
     let lhs: Uint256 = lhs.into();
     assert_eq!(
         lhs,
-        "4242424242424242424242424242424242424242424242424242424242424242"
+        "0x4242424242424242424242424242424242424242424242424242424242424242"
             .parse()
             .unwrap()
     );
@@ -314,7 +333,7 @@ fn create_from_32_bytes() {
 
 #[test]
 fn to_hex() {
-    let lhs: Uint256 = "babababababababababababababababababababababababababababababababa"
+    let lhs: Uint256 = "0xbabababababababababababababababababababababababababababababababa"
         .parse()
         .unwrap();
     assert_eq!(
