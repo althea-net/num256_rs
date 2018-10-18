@@ -112,6 +112,15 @@ impl From<[u8; 32]> for Uint256 {
     }
 }
 
+impl Into<[u8; 32]> for Uint256 {
+    fn into(self) -> [u8; 32] {
+        let bytes = self.0.to_bytes_be();
+        let mut res: [u8; 32] = Default::default();
+        res[32 - bytes.len()..].copy_from_slice(&bytes);
+        res
+    }
+}
+
 macro_rules! uint_impl_from_int {
     ($T:ty) => {
         impl From<$T> for Uint256 {
@@ -323,5 +332,18 @@ fn to_hex() {
     assert_eq!(
         format!("{:#X}", lhs),
         "0xBABABABABABABABABABABABABABABABABABABABABABABABABABABABABABABABA"
+    );
+}
+
+#[test]
+fn into_array() {
+    let val = Uint256::from(1024u16);
+    let foo: [u8; 32] = val.into();
+    assert_eq!(
+        foo,
+        [
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 4, 0
+        ]
     );
 }
