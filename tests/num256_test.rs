@@ -356,7 +356,7 @@ fn test_int256() {
 #[test]
 fn test_increment_2_to_the_power_of_255() {
     // This one was failing with ethereum_types::U256
-    let mut value: Uint256 = "7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+    let mut value: Uint256 = "0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
         .parse()
         .unwrap();
     assert_eq!(value.bits(), 255);
@@ -367,7 +367,7 @@ fn test_increment_2_to_the_power_of_255() {
 #[test]
 #[should_panic]
 fn test_increment_2_to_the_power_of_256() {
-    let mut value: Uint256 = "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+    let mut value: Uint256 = "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
         .parse()
         .unwrap();
     assert_eq!(value.bits(), 256);
@@ -378,7 +378,7 @@ fn test_increment_2_to_the_power_of_256() {
 #[test]
 fn test_increment_2_to_the_power_of_256_checked() {
     //2**256-1
-    let value: Uint256 = "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+    let value: Uint256 = "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
         .parse()
         .unwrap();
     assert_eq!(value.bits(), 256);
