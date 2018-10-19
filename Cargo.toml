@@ -2,7 +2,13 @@
 name = "num256"
 version = "0.1.0"
 authors = ["Jehan <jehan.tremback@gmail.com>"]
-license = "Apache 2.0"
+include = [
+    "**/*.rs",
+    "Cargo.toml"
+]
+description = "Implementation of 256 bit integers"
+repository = "https://github.com/althea-mesh/num256_rs"
+license-file = "LICENSE"
 
 [dependencies]
 num = "0.2.0"
