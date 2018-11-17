@@ -1,4 +1,5 @@
 pub use super::Int256;
+use failure::Error;
 use num::bigint::ParseBigIntError;
 use num::traits::ops::checked::{CheckedAdd, CheckedDiv, CheckedMul, CheckedSub};
 use num::{BigInt, BigUint};
@@ -36,16 +37,12 @@ impl Zero for Uint256 {
 }
 
 impl FromStr for Uint256 {
-    type Err = String;
+    type Err = Error;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if s.starts_with("0x") {
-            BigUint::from_str_radix(&s[2..], 16)
-                .map(Uint256)
-                .map_err(|e| format!("{:?}", e))
+            Ok(BigUint::from_str_radix(&s[2..], 16).map(Uint256)?)
         } else {
-            BigUint::from_str_radix(&s, 10)
-                .map(Uint256)
-                .map_err(|e| format!("{:?}", e))
+            Ok(BigUint::from_str_radix(&s, 10).map(Uint256)?)
         }
     }
 }
