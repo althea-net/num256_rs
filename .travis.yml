@@ -9,6 +9,8 @@ rust:
   - nightly
 
 env:
+  global:
+    secure: "hKI38DrTFKOKDFQGFYsAkVuEvaaivpNvb93H3IfdUoziZ3B8dstbQXj7bBvHbvu9qZ6Dz6aqwiGNZ62JlXA+rZfs937ZrgVQnGLstBCcgoxK7hNpYyjRwXj8hyHMdVLfTD8QBrAdB3gkZ8LT531EyFKNNgNUb8hGTHBO6f6eV59jyQeAxXL0A+Ftp9mP7SyQeQEtFclyCpTG/wxuCyXOU9fiub/0Kwuv5QSOO09xXtkJ15+yBbjLWiTVtC5Hy7eVaP7vi5x/LZ7OaoBRNRbOcHsoPkOBmYgW4NlmSQMWOy27pZwKtyi6SwckW+aGNJjwWUR+VaarqyrjROsGaxQGhNgN066S9GnI7I3hOTza77x0PJoonfAOH7R61E9zxe35N0UvkikJE0I3+9TG+IJre618UeU+6GPE4Zp0LZZnlghRBe65gWfNfYAQ62kkbu8lDLxK6LI9nV8BIegAceHd6AWaev50imP/IrkIGFECwv0S2gW+HBjTCYlIgsA8kpdMltf4R4veWZRg7BPUmUUYxGzigbCGeNhKszLoC1leEif4g9j/AmdvWQdcr5HES1HrFUksv+Lo43WVL/g2lYb+eFI5KF7sfknS+CQxt3IvRN7/lmtg1UEJwQT5oAHLgtfiWCf1AExAHp7YM7Rfq4vK8pp0zYh45G5vmnXVmyD011Y="
   matrix:
     - TARGET="x86_64-unknown-linux-gnu"
     - TARGET="mips-unknown-linux-gnu"
@@ -35,3 +37,12 @@ matrix:
     script:
       - rustup component add rustfmt-preview
       - cargo fmt --all -- --check
+
+deploy:
+  # Create new crates.io package
+  - provider: script
+    skip_cleanup: true
+    script: cargo publish --token ${CRATESIO_TOKEN}
+    on:
+      condition: x$CRATESIO_TOKEN != 'x' && $TRAVIS_RUST_VERSION = stable && $TARGET = 'x86_64-unknown-linux-gnu'
+      tags: true
