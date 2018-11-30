@@ -168,6 +168,7 @@ uint_impl_from_uint!(u8);
 uint_impl_from_uint!(u16);
 uint_impl_from_uint!(u32);
 uint_impl_from_uint!(u64);
+uint_impl_from_uint!(u128);
 uint_impl_from_uint!(usize);
 
 impl<T> Add<T> for Uint256
