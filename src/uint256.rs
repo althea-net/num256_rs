@@ -7,6 +7,7 @@ use num::{Num, Zero};
 use serde;
 use serde::ser::Serialize;
 use serde::{Deserialize, Deserializer, Serializer};
+use std::default::Default;
 use std::fmt;
 use std::ops::{Add, AddAssign, Deref, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
 use std::str::FromStr;
@@ -33,6 +34,12 @@ impl Zero for Uint256 {
 
     fn is_zero(&self) -> bool {
         self.0.is_zero()
+    }
+}
+
+impl Default for Uint256 {
+    fn default() -> Uint256 {
+        Uint256(BigUint::zero())
     }
 }
 

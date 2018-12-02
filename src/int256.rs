@@ -6,6 +6,7 @@ use num::Zero;
 use serde;
 use serde::ser::Serialize;
 use serde::{Deserialize, Deserializer, Serializer};
+use std::default::Default;
 use std::fmt;
 use std::ops::{Add, AddAssign, Deref, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 use std::str::FromStr;
@@ -21,6 +22,12 @@ impl Int256 {
     }
 
     pub fn zero() -> Self {
+        Int256(BigInt::zero())
+    }
+}
+
+impl Default for Int256 {
+    fn default() -> Int256 {
         Int256(BigInt::zero())
     }
 }
