@@ -11,11 +11,11 @@ repository = "https://github.com/althea-mesh/num256_rs"
 license-file = "LICENSE"
 
 [dependencies]
-num = "0.2.0"
-serde = "1.0.70"
-failure = "0.1.3"
+num = "0.2"
+serde = "1.0"
+failure = "0.1"
 
 [dev-dependencies]
-serde_derive = "1.0.70"
-serde_json = "1.0.24"
-lazy_static = "1.0.2"
+serde_derive = "1.0.80"
+serde_json = "1.0.33"
+lazy_static = "1.2.0"
