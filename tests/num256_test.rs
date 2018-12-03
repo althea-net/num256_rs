@@ -15,10 +15,10 @@ use num256::{Int256, Uint256};
 use std::ops::{Add, Div, Sub};
 
 lazy_static! {
-    static ref BIGGEST_UINT: Uint256 = Uint256::from_bytes_le(&[255u8; 32]);
-    static ref BIGGEST_INT: Int256 = Int256(pow(BigInt::from(2), 255) - BigInt::from(1));
-    static ref SMALLEST_INT: Int256 = Int256(pow(BigInt::from(-2), 255) + BigInt::from(1));
-    static ref BIGGEST_INT_AS_UINT: Uint256 = {
+    static ref UINT256_MAX: Uint256 = Uint256::from_bytes_le(&[255u8; 32]);
+    static ref INT256_MAX: Int256 = Int256(pow(BigInt::from(2), 255) - BigInt::from(1));
+    static ref INT256_MIN: Int256 = Int256(pow(BigInt::from(-2), 255) + BigInt::from(1));
+    static ref INT256_MAX_AS_UINT256: Uint256 = {
         let mut biggest_int_le = [255u8; 32];
         biggest_int_le[31] = 127;
         Uint256::from_bytes_le(&biggest_int_le)
@@ -34,8 +34,8 @@ pub struct MyStruct {
 #[test]
 fn serialize() {
     let struc = MyStruct {
-        uint: BIGGEST_UINT.clone(),
-        int: SMALLEST_INT.clone(),
+        uint: UINT256_MAX.clone(),
+        int: INT256_MIN.clone(),
     };
 
     let expected = "{\"uint\":\"0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\",\"int\":\"-57896044618658097711785492504343953926634992332820282019728792003956564819967\"}";
@@ -45,8 +45,8 @@ fn serialize() {
     assert_eq!(expected, j);
     let m: MyStruct = serde_json::from_str(expected).unwrap();
 
-    assert_eq!(BIGGEST_UINT.clone(), m.uint);
-    assert_eq!(SMALLEST_INT.clone(), m.int);
+    assert_eq!(UINT256_MAX.clone(), m.uint);
+    assert_eq!(INT256_MIN.clone(), m.int);
 }
 
 #[test]
@@ -84,23 +84,23 @@ fn test_from_int() {
 #[test]
 #[should_panic]
 fn test_uint_add_panic() {
-    let _val = BIGGEST_UINT.clone() + Uint256::from(1 as u32);
+    let _val = UINT256_MAX.clone() + Uint256::from(1 as u32);
 }
 
 #[test]
 fn test_uint_add_no_panic() {
-    let _val = BIGGEST_UINT.clone() + Uint256::from(0 as u32);
+    let _val = UINT256_MAX.clone() + Uint256::from(0 as u32);
 }
 
 #[test]
 #[should_panic]
 fn test_uint_from_add_panic() {
-    let _val = BIGGEST_UINT.clone().add(Uint256::from(1));
+    let _val = UINT256_MAX.clone().add(Uint256::from(1));
 }
 
 #[test]
 fn test_uint_from_add_no_panic() {
-    let _val = BIGGEST_UINT.clone().add(Uint256::from(0));
+    let _val = UINT256_MAX.clone().add(Uint256::from(0));
 }
 
 #[test]
@@ -134,7 +134,7 @@ fn test_uint_from_sub_no_panic() {
 #[test]
 #[should_panic]
 fn test_uint_mul_panic() {
-    let _val: Uint256 = BIGGEST_UINT.clone() * Uint256::from(2);
+    let _val: Uint256 = UINT256_MAX.clone() * Uint256::from(2);
 }
 
 #[test]
@@ -145,7 +145,7 @@ fn test_uint_mul_no_panic() {
 #[test]
 #[should_panic]
 fn test_uint_from_mul_panic() {
-    let _val = BIGGEST_UINT.clone() * Uint256::from(2);
+    let _val = UINT256_MAX.clone() * Uint256::from(2);
 }
 
 #[test]
@@ -156,7 +156,7 @@ fn test_uint_from_mul_no_panic() {
 #[test]
 #[should_panic]
 fn test_uint_div_panic() {
-    let _val = BIGGEST_UINT.clone() / Uint256::from(0);
+    let _val = UINT256_MAX.clone() / Uint256::from(0);
 }
 
 #[test]
@@ -172,7 +172,7 @@ fn test_uint_from_div_assign_no_panic() {
 #[test]
 #[should_panic]
 fn test_uint_from_div_panic() {
-    let _val = BIGGEST_UINT.clone().div(Uint256::from(0));
+    let _val = UINT256_MAX.clone().div(Uint256::from(0));
 }
 
 #[test]
@@ -183,12 +183,12 @@ fn test_uint_from_div_no_panic() {
 #[test]
 fn test_uint256() {
     assert!(
-        BIGGEST_UINT.checked_add(&Uint256::from(1 as u32)).is_none(),
+        UINT256_MAX.checked_add(&Uint256::from(1 as u32)).is_none(),
         "should return None adding 1 to biggest"
     );
 
     assert!(
-        BIGGEST_UINT.checked_add(&Uint256::from(0 as u32)).is_some(),
+        UINT256_MAX.checked_add(&Uint256::from(0 as u32)).is_some(),
         "should return Some adding 0 to biggest"
     );
 
@@ -225,18 +225,18 @@ fn test_uint256() {
 #[test]
 #[should_panic]
 fn test_int_add_panic() {
-    let _val = BIGGEST_INT.clone() + Int256::from(1);
+    let _val = INT256_MAX.clone() + Int256::from(1);
 }
 
 #[test]
 fn test_int_add_no_panic() {
-    let _val = BIGGEST_INT.clone() + Int256::from(0);
+    let _val = INT256_MAX.clone() + Int256::from(0);
 }
 
 #[test]
 #[should_panic]
 fn test_int_sub_panic() {
-    let _val = SMALLEST_INT.clone() - Int256::from(1);
+    let _val = INT256_MIN.clone() - Int256::from(1);
 }
 
 #[test]
@@ -247,7 +247,7 @@ fn test_int_sub_no_panic() {
 #[test]
 #[should_panic]
 fn test_int_mul_panic() {
-    let _val = SMALLEST_INT.clone() * Int256::from(2);
+    let _val = INT256_MIN.clone() * Int256::from(2);
 }
 
 #[test]
@@ -258,7 +258,7 @@ fn test_int_mul_no_panic() {
 #[test]
 #[should_panic]
 fn test_int_div_panic() {
-    let _val = SMALLEST_INT.clone() / Int256::from(0);
+    let _val = INT256_MIN.clone() / Int256::from(0);
 }
 
 #[test]
@@ -269,18 +269,18 @@ fn test_int_div_no_panic() {
 #[test]
 #[should_panic]
 fn test_int_from_add_panic() {
-    let _val = BIGGEST_INT.clone() + 1;
+    let _val = INT256_MAX.clone() + 1;
 }
 
 #[test]
 fn test_int_from_add_no_panic() {
-    let _val = BIGGEST_INT.clone() + 0;
+    let _val = INT256_MAX.clone() + 0;
 }
 
 #[test]
 #[should_panic]
 fn test_int_from_sub_panic() {
-    let _val = SMALLEST_INT.clone() - 1;
+    let _val = INT256_MIN.clone() - 1;
 }
 
 #[test]
@@ -291,7 +291,7 @@ fn test_int_from_sub_no_panic() {
 #[test]
 #[should_panic]
 fn test_int_from_mul_panic() {
-    let _val = SMALLEST_INT.clone() * 2;
+    let _val = INT256_MIN.clone() * 2;
 }
 
 #[test]
@@ -302,7 +302,7 @@ fn test_int_from_mul_no_panic() {
 #[test]
 #[should_panic]
 fn test_int_from_div_panic() {
-    let _val = SMALLEST_INT.clone() / 0;
+    let _val = INT256_MIN.clone() / 0;
 }
 
 #[test]
@@ -313,36 +313,36 @@ fn test_int_from_div_no_panic() {
 #[test]
 #[should_panic]
 fn test_uint_to_int_panic() {
-    Int256::from(BIGGEST_INT_AS_UINT.clone().add(Uint256::from(1 as u32)));
+    Int256::from(INT256_MAX_AS_UINT256.clone().add(Uint256::from(1 as u32)));
 }
 
 #[test]
 fn test_int256() {
     assert_eq!(
-        Int256::from(BIGGEST_INT_AS_UINT.clone().add(Uint256::from(0 as u32))),
-        BIGGEST_INT.clone()
+        Int256::from(INT256_MAX_AS_UINT256.clone().add(Uint256::from(0 as u32))),
+        INT256_MAX.clone()
     );
 
     assert!(
-        BIGGEST_INT.checked_add(&Int256::from(1)).is_none(),
+        INT256_MAX.checked_add(&Int256::from(1)).is_none(),
         "should return None adding 1 to biggest"
     );
     assert!(
-        BIGGEST_INT.checked_add(&Int256::from(0)).is_some(),
+        INT256_MAX.checked_add(&Int256::from(0)).is_some(),
         "should return Some adding 0 to biggest"
     );
 
     assert!(
-        SMALLEST_INT.checked_sub(&Int256::from(1)).is_none(),
+        INT256_MIN.checked_sub(&Int256::from(1)).is_none(),
         "should return None subtracting 1 from smallest"
     );
     assert!(
-        SMALLEST_INT.checked_sub(&Int256::from(0)).is_some(),
+        INT256_MIN.checked_sub(&Int256::from(0)).is_some(),
         "should return Some subtracting 0 from smallest"
     );
 
-    assert!(SMALLEST_INT.checked_mul(&Int256::from(2)).is_none());
-    assert!(SMALLEST_INT.checked_mul(&Int256::from(1)).is_some());
+    assert!(INT256_MIN.checked_mul(&Int256::from(2)).is_none());
+    assert!(INT256_MIN.checked_mul(&Int256::from(1)).is_some());
 
     let num = &Int256::from(345)
         .checked_sub(&Int256::from(44))
