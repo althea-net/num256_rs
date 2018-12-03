@@ -83,11 +83,13 @@ impl_from_int!(i8);
 impl_from_int!(i16);
 impl_from_int!(i32);
 impl_from_int!(i64);
+impl_from_int!(i128);
 impl_from_int!(isize);
 impl_from_uint!(u8);
 impl_from_uint!(u16);
 impl_from_uint!(u32);
 impl_from_uint!(u64);
+impl_from_uint!(u128);
 impl_from_uint!(usize);
 
 macro_rules! impl_to {

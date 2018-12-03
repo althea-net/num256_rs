@@ -170,6 +170,7 @@ uint_impl_from_int!(i8);
 uint_impl_from_int!(i16);
 uint_impl_from_int!(i32);
 uint_impl_from_int!(i64);
+uint_impl_from_int!(i128);
 uint_impl_from_int!(isize);
 uint_impl_from_uint!(u8);
 uint_impl_from_uint!(u16);
