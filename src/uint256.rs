@@ -1,8 +1,8 @@
 pub use super::Int256;
 use failure::Error;
 use num::bigint::ParseBigIntError;
-use num::ToPrimitive;
 use num::traits::ops::checked::{CheckedAdd, CheckedDiv, CheckedMul, CheckedSub};
+use num::ToPrimitive;
 use num::{BigInt, BigUint};
 use num::{Num, Zero};
 use serde;
@@ -191,7 +191,6 @@ macro_rules! impl_to {
     };
 }
 
-
 impl_to!(i8, to_i8);
 impl_to!(i16, to_i16);
 impl_to!(i32, to_i32);
@@ -204,7 +203,6 @@ impl_to!(u32, to_u32);
 impl_to!(u64, to_u64);
 impl_to!(u128, to_u128);
 impl_to!(usize, to_usize);
-
 
 impl<T> Add<T> for Uint256
 where
