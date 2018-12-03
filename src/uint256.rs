@@ -1,6 +1,7 @@
 pub use super::Int256;
 use failure::Error;
 use num::bigint::ParseBigIntError;
+use num::ToPrimitive;
 use num::traits::ops::checked::{CheckedAdd, CheckedDiv, CheckedMul, CheckedSub};
 use num::{BigInt, BigUint};
 use num::{Num, Zero};
@@ -178,6 +179,32 @@ uint_impl_from_uint!(u32);
 uint_impl_from_uint!(u64);
 uint_impl_from_uint!(u128);
 uint_impl_from_uint!(usize);
+
+macro_rules! impl_to {
+    ($T:ty, $F:ident) => {
+        impl Into<$T> for Uint256 {
+            #[inline]
+            fn into(self) -> $T {
+                (self.0).$F().unwrap()
+            }
+        }
+    };
+}
+
+
+impl_to!(i8, to_i8);
+impl_to!(i16, to_i16);
+impl_to!(i32, to_i32);
+impl_to!(i64, to_i64);
+impl_to!(i128, to_i128);
+impl_to!(isize, to_isize);
+impl_to!(u8, to_u8);
+impl_to!(u16, to_u16);
+impl_to!(u32, to_u32);
+impl_to!(u64, to_u64);
+impl_to!(u128, to_u128);
+impl_to!(usize, to_usize);
+
 
 impl<T> Add<T> for Uint256
 where
