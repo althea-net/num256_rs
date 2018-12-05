@@ -1,4 +1,6 @@
 extern crate failure;
+#[macro_use]
+extern crate num_derive;
 
 extern crate num;
 extern crate serde;

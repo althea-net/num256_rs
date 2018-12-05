@@ -2,8 +2,7 @@ pub use super::Int256;
 use failure::Error;
 use num::bigint::ParseBigIntError;
 use num::traits::ops::checked::{CheckedAdd, CheckedDiv, CheckedMul, CheckedSub};
-use num::ToPrimitive;
-use num::{BigInt, BigUint};
+use num::{BigUint, FromPrimitive, NumCast, ToPrimitive};
 use num::{Num, Zero};
 use serde;
 use serde::ser::Serialize;
@@ -13,7 +12,7 @@ use std::fmt;
 use std::ops::{Add, AddAssign, Deref, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
 use std::str::FromStr;
 
-#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, FromPrimitive, ToPrimitive, Zero, Default)]
 pub struct Uint256(pub BigUint);
 
 impl Uint256 {
@@ -25,22 +24,6 @@ impl Uint256 {
     }
     pub fn from_str_radix(s: &str, radix: u32) -> Result<Uint256, ParseBigIntError> {
         BigUint::from_str_radix(s, radix).map(Uint256)
-    }
-}
-
-impl Zero for Uint256 {
-    fn zero() -> Uint256 {
-        Uint256(BigUint::zero())
-    }
-
-    fn is_zero(&self) -> bool {
-        self.0.is_zero()
-    }
-}
-
-impl Default for Uint256 {
-    fn default() -> Uint256 {
-        Uint256(BigUint::zero())
     }
 }
 
@@ -118,12 +101,6 @@ impl<'de> Deserialize<'de> for Uint256 {
     }
 }
 
-impl From<Int256> for Uint256 {
-    fn from(n: Int256) -> Self {
-        Uint256(n.0.to_biguint().unwrap())
-    }
-}
-
 impl From<[u8; 32]> for Uint256 {
     fn from(n: [u8; 32]) -> Uint256 {
         Uint256(BigUint::from_bytes_be(&n))
@@ -145,17 +122,6 @@ impl Into<[u8; 32]> for Uint256 {
     }
 }
 
-macro_rules! uint_impl_from_int {
-    ($T:ty) => {
-        impl From<$T> for Uint256 {
-            #[inline]
-            fn from(n: $T) -> Self {
-                Uint256(BigInt::from(n).to_biguint().unwrap())
-            }
-        }
-    };
-}
-
 macro_rules! uint_impl_from_uint {
     ($T:ty) => {
         impl From<$T> for Uint256 {
@@ -167,42 +133,13 @@ macro_rules! uint_impl_from_uint {
     };
 }
 
-uint_impl_from_int!(i8);
-uint_impl_from_int!(i16);
-uint_impl_from_int!(i32);
-uint_impl_from_int!(i64);
-uint_impl_from_int!(i128);
-uint_impl_from_int!(isize);
+// These implementations are pretty much guaranteed to be panic-free.
 uint_impl_from_uint!(u8);
 uint_impl_from_uint!(u16);
 uint_impl_from_uint!(u32);
 uint_impl_from_uint!(u64);
 uint_impl_from_uint!(u128);
 uint_impl_from_uint!(usize);
-
-macro_rules! impl_to {
-    ($T:ty, $F:ident) => {
-        impl Into<$T> for Uint256 {
-            #[inline]
-            fn into(self) -> $T {
-                (self.0).$F().unwrap()
-            }
-        }
-    };
-}
-
-impl_to!(i8, to_i8);
-impl_to!(i16, to_i16);
-impl_to!(i32, to_i32);
-impl_to!(i64, to_i64);
-impl_to!(i128, to_i128);
-impl_to!(isize, to_isize);
-impl_to!(u8, to_u8);
-impl_to!(u16, to_u16);
-impl_to!(u32, to_u32);
-impl_to!(u64, to_u64);
-impl_to!(u128, to_u128);
-impl_to!(usize, to_usize);
 
 impl<T> Add<T> for Uint256
 where
@@ -212,7 +149,7 @@ where
     fn add(self, v: T) -> Uint256 {
         let num: Uint256 = v.into();
         if self.0.bits() + num.bits() > 256 {
-            panic!("overflow");
+            panic!("attempt to add with overflow");
         }
         Uint256(self.0 + num.0)
     }
@@ -225,7 +162,7 @@ where
     fn add_assign(&mut self, v: T) {
         self.0 = self.0.clone() + v.into().0;
         if self.0.bits() > 256 {
-            panic!("overflow");
+            panic!("attempt to add with overflow");
         }
     }
 }
@@ -248,7 +185,7 @@ where
     fn sub(self, v: T) -> Uint256 {
         let num = self.0 - v.into().0;
         if num.bits() > 256 {
-            panic!("overflow");
+            panic!("attempt to subtract with overflow");
         }
         Uint256(num)
     }
@@ -260,9 +197,6 @@ where
 {
     fn sub_assign(&mut self, v: T) {
         self.0 = self.0.clone() - v.into().0;
-        if self.0.bits() > 256 {
-            panic!("overflow");
-        }
     }
 }
 
@@ -280,7 +214,7 @@ where
     fn mul(self, v: T) -> Uint256 {
         let num = self.0 * v.into().0;
         if num.bits() > 256 {
-            panic!("overflow");
+            panic!("attempt to multiply with overflow");
         }
         Uint256(num)
     }
@@ -337,7 +271,7 @@ where
 
 impl CheckedDiv for Uint256 {
     fn checked_div(&self, v: &Uint256) -> Option<Uint256> {
-        if *v == Uint256::from(0) {
+        if *v == Uint256::zero() {
             return None;
         }
         // drop down to wrapped bigint to stop from panicing in fn above
