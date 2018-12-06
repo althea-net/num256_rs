@@ -10,7 +10,7 @@ extern crate serde;
 use num::pow::pow;
 use num::traits::cast::ToPrimitive;
 use num::traits::ops::checked::{CheckedAdd, CheckedDiv, CheckedMul, CheckedSub};
-use num::{BigInt, BigUint, Bounded, Zero};
+use num::{BigUint, Bounded, Zero};
 use num256::{Int256, Uint256};
 use std::ops::{Add, Div, Sub};
 
@@ -71,7 +71,7 @@ fn test_from_uint() {
 #[should_panic]
 fn test_from_uint_to_int() {
     let uint = BIGGEST_UINT.clone();
-    let res = uint.to_int256().unwrap();
+    let _res = uint.to_int256().unwrap();
 }
 
 #[test]
@@ -380,7 +380,7 @@ fn test_uint_to_int_panic() {
 #[test]
 fn test_int256() {
     assert_eq!(
-        Int256::from(Int256::max_value().clone() + Int256::zero()),
+        Int256::max_value().clone() + Int256::zero(),
         Int256::max_value().clone()
     );
 

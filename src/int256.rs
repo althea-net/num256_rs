@@ -1,12 +1,9 @@
-use num::bigint::{BigInt, ToBigInt};
+use num::bigint::BigInt;
 use num::traits::ops::checked::{CheckedAdd, CheckedDiv, CheckedMul, CheckedSub};
-use num::traits::Signed;
-use num::ToPrimitive;
 use num::{pow, Bounded};
 use serde;
 use serde::ser::Serialize;
 use serde::{Deserialize, Deserializer, Serializer};
-use std::default::Default;
 use std::fmt;
 use std::ops::{Add, AddAssign, Deref, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 use std::str::FromStr;
@@ -21,8 +18,8 @@ impl Int256 {
     pub fn to_uint256(&self) -> Option<Uint256> {
         self.0
             .to_biguint()
-            .filter(|value| value >= &Uint256::max_value() && value <= &Uint256::min_value())
             .map(Uint256)
+            .filter(|value| *value >= Uint256::max_value() && *value <= Uint256::min_value())
     }
 }
 
@@ -103,7 +100,7 @@ impl<'de> Deserialize<'de> for Int256 {
         let s = String::deserialize(deserializer)?;
 
         BigInt::from_str(&s)
-            .map(|v| Int256(v))
+            .map(Int256)
             .map_err(serde::de::Error::custom)
     }
 }

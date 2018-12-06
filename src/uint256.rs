@@ -268,9 +268,9 @@ fn to_hex() {
 #[test]
 fn into_array() {
     let val = Uint256::from(1024u16);
-    let foo: [u8; 32] = val.into();
+    let data: [u8; 32] = val.into();
     assert_eq!(
-        foo,
+        data,
         [
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 4, 0
