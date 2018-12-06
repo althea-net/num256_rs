@@ -1,9 +1,11 @@
 pub use super::Int256;
 use failure::Error;
 use num::bigint::ParseBigIntError;
+use num::bigint::ToBigInt;
 use num::traits::ops::checked::{CheckedAdd, CheckedDiv, CheckedMul, CheckedSub};
 use num::BigUint;
 use num::Num;
+use num::{pow, Bounded, Zero};
 use serde;
 use serde::ser::Serialize;
 use serde::{Deserialize, Deserializer, Serializer};
@@ -24,6 +26,23 @@ impl Uint256 {
     }
     pub fn from_str_radix(s: &str, radix: u32) -> Result<Uint256, ParseBigIntError> {
         BigUint::from_str_radix(s, radix).map(Uint256)
+    }
+    /// Converts value to a signed 256 bit integer
+    pub fn to_int256(&self) -> Option<Int256> {
+        self.0
+            .to_bigint()
+            .filter(|value| value.bits() <= 255)
+            .map(Int256)
+    }
+}
+
+impl Bounded for Uint256 {
+    fn min_value() -> Self {
+        // -2**255
+        Uint256::zero()
+    }
+    fn max_value() -> Self {
+        Uint256(pow(BigUint::from(2u32), 256) - BigUint::from(1u32))
     }
 }
 
