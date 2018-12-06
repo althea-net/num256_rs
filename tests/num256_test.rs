@@ -204,18 +204,14 @@ fn test_uint_from_div_panic() {
 
 #[test]
 fn test_uint_from_checked_div() {
-    assert!(
-        BIGGEST_UINT
-            .clone()
-            .checked_div(&Uint256::from(0u8))
-            .is_none()
-    );
-    assert!(
-        BIGGEST_UINT
-            .clone()
-            .checked_div(&Uint256::from(5u8))
-            .is_some()
-    );
+    assert!(BIGGEST_UINT
+        .clone()
+        .checked_div(&Uint256::from(0u8))
+        .is_none());
+    assert!(BIGGEST_UINT
+        .clone()
+        .checked_div(&Uint256::from(5u8))
+        .is_some());
 }
 
 #[test]
