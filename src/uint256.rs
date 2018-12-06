@@ -42,7 +42,10 @@ impl Bounded for Uint256 {
         Uint256::zero()
     }
     fn max_value() -> Self {
-        Uint256(pow(BigUint::from(2u32), 256) - BigUint::from(1u32))
+        lazy_static! {
+            static ref MAX_VALUE: BigUint = pow(BigUint::from(2u32), 256) - BigUint::from(1u32);
+        }
+        Uint256(MAX_VALUE.clone())
     }
 }
 

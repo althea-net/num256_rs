@@ -28,11 +28,17 @@ impl Int256 {
 
 impl Bounded for Int256 {
     fn min_value() -> Self {
+        lazy_static! {
+            static ref MIN_VALUE: BigInt = -pow(BigInt::from(2), 255);
+        }
         // -2**255
-        Int256(pow(BigInt::from(-2), 255))
+        Int256(MIN_VALUE.clone())
     }
     fn max_value() -> Self {
-        Int256(pow(BigInt::from(2), 255) - BigInt::from(1))
+        lazy_static! {
+            static ref MAX_VALUE: BigInt = pow(BigInt::from(2), 255) - BigInt::from(1);
+        }
+        Int256(MAX_VALUE.clone())
     }
 }
 
