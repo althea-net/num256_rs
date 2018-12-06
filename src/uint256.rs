@@ -1,10 +1,11 @@
 pub use super::Int256;
 use failure::Error;
 use num::bigint::ParseBigIntError;
+use num::bigint::ToBigInt;
 use num::traits::ops::checked::{CheckedAdd, CheckedDiv, CheckedMul, CheckedSub};
-use num::ToPrimitive;
-use num::{BigInt, BigUint};
-use num::{Num, Zero};
+use num::BigUint;
+use num::Num;
+use num::{pow, Bounded, Zero};
 use serde;
 use serde::ser::Serialize;
 use serde::{Deserialize, Deserializer, Serializer};
@@ -13,7 +14,7 @@ use std::fmt;
 use std::ops::{Add, AddAssign, Deref, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
 use std::str::FromStr;
 
-#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, FromPrimitive, ToPrimitive, Zero, Default)]
 pub struct Uint256(pub BigUint);
 
 impl Uint256 {
@@ -26,21 +27,25 @@ impl Uint256 {
     pub fn from_str_radix(s: &str, radix: u32) -> Result<Uint256, ParseBigIntError> {
         BigUint::from_str_radix(s, radix).map(Uint256)
     }
-}
-
-impl Zero for Uint256 {
-    fn zero() -> Uint256 {
-        Uint256(BigUint::zero())
-    }
-
-    fn is_zero(&self) -> bool {
-        self.0.is_zero()
+    /// Converts value to a signed 256 bit integer
+    pub fn to_int256(&self) -> Option<Int256> {
+        self.0
+            .to_bigint()
+            .filter(|value| value.bits() <= 255)
+            .map(Int256)
     }
 }
 
-impl Default for Uint256 {
-    fn default() -> Uint256 {
-        Uint256(BigUint::zero())
+impl Bounded for Uint256 {
+    fn min_value() -> Self {
+        // -2**255
+        Uint256::zero()
+    }
+    fn max_value() -> Self {
+        lazy_static! {
+            static ref MAX_VALUE: BigUint = pow(BigUint::from(2u32), 256) - BigUint::from(1u32);
+        }
+        Uint256(MAX_VALUE.clone())
     }
 }
 
@@ -118,12 +123,6 @@ impl<'de> Deserialize<'de> for Uint256 {
     }
 }
 
-impl From<Int256> for Uint256 {
-    fn from(n: Int256) -> Self {
-        Uint256(n.0.to_biguint().unwrap())
-    }
-}
-
 impl From<[u8; 32]> for Uint256 {
     fn from(n: [u8; 32]) -> Uint256 {
         Uint256(BigUint::from_bytes_be(&n))
@@ -145,17 +144,6 @@ impl Into<[u8; 32]> for Uint256 {
     }
 }
 
-macro_rules! uint_impl_from_int {
-    ($T:ty) => {
-        impl From<$T> for Uint256 {
-            #[inline]
-            fn from(n: $T) -> Self {
-                Uint256(BigInt::from(n).to_biguint().unwrap())
-            }
-        }
-    };
-}
-
 macro_rules! uint_impl_from_uint {
     ($T:ty) => {
         impl From<$T> for Uint256 {
@@ -167,12 +155,7 @@ macro_rules! uint_impl_from_uint {
     };
 }
 
-uint_impl_from_int!(i8);
-uint_impl_from_int!(i16);
-uint_impl_from_int!(i32);
-uint_impl_from_int!(i64);
-uint_impl_from_int!(i128);
-uint_impl_from_int!(isize);
+// These implementations are pretty much guaranteed to be panic-free.
 uint_impl_from_uint!(u8);
 uint_impl_from_uint!(u16);
 uint_impl_from_uint!(u32);
@@ -180,171 +163,68 @@ uint_impl_from_uint!(u64);
 uint_impl_from_uint!(u128);
 uint_impl_from_uint!(usize);
 
-macro_rules! impl_to {
-    ($T:ty, $F:ident) => {
-        impl Into<$T> for Uint256 {
-            #[inline]
-            fn into(self) -> $T {
-                (self.0).$F().unwrap()
+/// A macro that forwards an unary operator trait i.e. Add
+macro_rules! forward_op {
+    (impl $trait_: ident for $type_: ident { fn $method: ident }) => {
+        impl $trait_<$type_> for $type_ {
+            type Output = $type_;
+
+            fn $method(self, $type_(b): $type_) -> $type_ {
+                let $type_(a) = self;
+                let res = a.$method(&b);
+                if res.bits() > 256 {
+                    panic!("attempt to {} with overflow", stringify!($method));
+                }
+                $type_(res)
             }
         }
     };
 }
 
-impl_to!(i8, to_i8);
-impl_to!(i16, to_i16);
-impl_to!(i32, to_i32);
-impl_to!(i64, to_i64);
-impl_to!(i128, to_i128);
-impl_to!(isize, to_isize);
-impl_to!(u8, to_u8);
-impl_to!(u16, to_u16);
-impl_to!(u32, to_u32);
-impl_to!(u64, to_u64);
-impl_to!(u128, to_u128);
-impl_to!(usize, to_usize);
-
-impl<T> Add<T> for Uint256
-where
-    T: Into<Uint256>,
-{
-    type Output = Uint256;
-    fn add(self, v: T) -> Uint256 {
-        let num: Uint256 = v.into();
-        if self.0.bits() + num.bits() > 256 {
-            panic!("overflow");
+/// A macro that forwards a checked operator i.e. CheckedAdd
+macro_rules! forward_checked_op {
+    (impl $trait_: ident for $type_: ident { fn $method: ident }) => {
+        impl $trait_ for $type_ {
+            fn $method(&self, $type_(b): &$type_) -> Option<$type_> {
+                let $type_(a) = self;
+                a.$method(&b)
+                    .filter(|value| value.bits() <= 256)
+                    .map($type_)
+            }
         }
-        Uint256(self.0 + num.0)
-    }
+    };
 }
 
-impl<T> AddAssign<T> for Uint256
-where
-    T: Into<Uint256>,
-{
-    fn add_assign(&mut self, v: T) {
-        self.0 = self.0.clone() + v.into().0;
-        if self.0.bits() > 256 {
-            panic!("overflow");
+/// A macro that forwards a assignment operator i.e. AddAssign
+macro_rules! forward_assign_op {
+    (impl $trait_: ident for $type_: ident { fn $method: ident }) => {
+        impl $trait_ for $type_ {
+            fn $method(&mut self, $type_(b): $type_) {
+                let a = &mut self.0;
+                a.$method(b);
+                if a.bits() > 256 {
+                    panic!("attempt to {} with overflow", stringify!($method));
+                }
+            }
         }
-    }
+    };
 }
 
-impl CheckedAdd for Uint256 {
-    fn checked_add(&self, v: &Uint256) -> Option<Uint256> {
-        // drop down to wrapped bigint to stop from panicing in fn above
-        if self.0.bits() + v.0.bits() > 256 {
-            return None;
-        }
-        Some(Uint256(self.0.clone() + v.0.clone()))
-    }
-}
+forward_op! { impl Add for Uint256 { fn add } }
+forward_checked_op! { impl CheckedAdd for Uint256 { fn checked_add } }
+forward_assign_op! { impl AddAssign for Uint256 { fn add_assign } }
 
-impl<T> Sub<T> for Uint256
-where
-    T: Into<Uint256>,
-{
-    type Output = Uint256;
-    fn sub(self, v: T) -> Uint256 {
-        let num = self.0 - v.into().0;
-        if num.bits() > 256 {
-            panic!("overflow");
-        }
-        Uint256(num)
-    }
-}
+forward_op! { impl Sub for Uint256 { fn sub } }
+forward_checked_op! { impl CheckedSub for Uint256 { fn checked_sub } }
+forward_assign_op! { impl SubAssign for Uint256 { fn sub_assign } }
 
-impl<T> SubAssign<T> for Uint256
-where
-    T: Into<Uint256>,
-{
-    fn sub_assign(&mut self, v: T) {
-        self.0 = self.0.clone() - v.into().0;
-        if self.0.bits() > 256 {
-            panic!("overflow");
-        }
-    }
-}
+forward_op! { impl Mul for Uint256 { fn mul } }
+forward_checked_op! { impl CheckedMul for Uint256 { fn checked_mul } }
+forward_assign_op! { impl MulAssign for Uint256 { fn mul_assign } }
 
-impl CheckedSub for Uint256 {
-    fn checked_sub(&self, v: &Uint256) -> Option<Uint256> {
-        self.0.checked_sub(&v.0).map(Uint256)
-    }
-}
-
-impl<T> Mul<T> for Uint256
-where
-    T: Into<Uint256>,
-{
-    type Output = Uint256;
-    fn mul(self, v: T) -> Uint256 {
-        let num = self.0 * v.into().0;
-        if num.bits() > 256 {
-            panic!("overflow");
-        }
-        Uint256(num)
-    }
-}
-
-impl<T> MulAssign<T> for Uint256
-where
-    T: Into<Uint256>,
-{
-    fn mul_assign(&mut self, v: T) {
-        self.0 = self.0.clone() * v.into().0;
-        if self.0.bits() > 256 {
-            panic!("overflow");
-        }
-    }
-}
-
-impl CheckedMul for Uint256 {
-    fn checked_mul(&self, v: &Uint256) -> Option<Uint256> {
-        // drop down to wrapped bigint to stop from panicing in fn above
-        let num = self.0.clone() * v.0.clone();
-        if num.bits() > 256 {
-            return None;
-        }
-        Some(Uint256(num))
-    }
-}
-
-impl<T> DivAssign<T> for Uint256
-where
-    T: Into<Uint256>,
-{
-    fn div_assign(&mut self, v: T) {
-        self.0 = self.0.clone() / v.into().0;
-        if self.0.bits() > 256 {
-            panic!("overflow");
-        }
-    }
-}
-
-impl<T> Div<T> for Uint256
-where
-    T: Into<Uint256>,
-{
-    type Output = Uint256;
-    fn div(self, v: T) -> Uint256 {
-        let num = self.0 / v.into().0;
-        if num.bits() > 256 {
-            panic!("overflow");
-        }
-        Uint256(num)
-    }
-}
-
-impl CheckedDiv for Uint256 {
-    fn checked_div(&self, v: &Uint256) -> Option<Uint256> {
-        if *v == Uint256::from(0) {
-            return None;
-        }
-        // drop down to wrapped bigint to stop from panicing in fn above
-        let num = self.0.clone() / v.0.clone();
-        Some(Uint256(num))
-    }
-}
+forward_op! { impl Div for Uint256 { fn div } }
+forward_checked_op! { impl CheckedDiv for Uint256 { fn checked_div } }
+forward_assign_op! { impl DivAssign for Uint256 { fn div_assign } }
 
 #[test]
 fn create_from_32_bytes() {
@@ -388,9 +268,9 @@ fn to_hex() {
 #[test]
 fn into_array() {
     let val = Uint256::from(1024u16);
-    let foo: [u8; 32] = val.into();
+    let data: [u8; 32] = val.into();
     assert_eq!(
-        foo,
+        data,
         [
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 4, 0
