@@ -9,13 +9,17 @@ extern crate serde;
 
 use num::pow::pow;
 use num::traits::cast::ToPrimitive;
-use num::traits::ops::checked::{CheckedAdd, CheckedMul, CheckedSub};
-use num::{BigInt, Zero};
+use num::traits::ops::checked::{CheckedAdd, CheckedDiv, CheckedMul, CheckedSub};
+use num::{BigInt, BigUint, Zero};
 use num256::{Int256, Uint256};
 use std::ops::{Add, Div, Sub};
 
 lazy_static! {
-    static ref BIGGEST_UINT: Uint256 = Uint256::from_bytes_le(&[255u8; 32]);
+    static ref BIGGEST_UINT: Uint256 = {
+        let res = pow(BigUint::from(2u8), 256) - BigUint::from(1u8);
+        assert!(res.bits() == 256);
+        Uint256(res)
+    };
     static ref BIGGEST_INT: Int256 = Int256(pow(BigInt::from(2), 255) - BigInt::from(1));
     static ref SMALLEST_INT: Int256 = Int256(pow(BigInt::from(-2), 255) + BigInt::from(1));
     static ref BIGGEST_INT_AS_UINT: Uint256 = {
@@ -88,6 +92,13 @@ fn test_uint_add_panic() {
 }
 
 #[test]
+#[should_panic]
+fn test_uint_add_assign_panic() {
+    let mut val = BIGGEST_UINT.clone();
+    val += Uint256::from(1u32);
+}
+
+#[test]
 fn test_uint_add_no_panic() {
     let _val = BIGGEST_UINT.clone() + Uint256::from(0u32);
 }
@@ -140,12 +151,28 @@ fn test_uint_mul_panic() {
 #[test]
 fn test_uint_mul_no_panic() {
     assert_eq!(Uint256::from(3u8) * Uint256::from(2u8), Uint256::from(6u8));
+    assert_eq!(
+        "57896044618658097711785492504343953926634992332820282019728792003956564819967"
+            .parse::<Uint256>()
+            .unwrap()
+            * Uint256::from(2u8),
+        "115792089237316195423570985008687907853269984665640564039457584007913129639934"
+            .parse::<Uint256>()
+            .unwrap()
+    );
 }
 
 #[test]
 #[should_panic]
 fn test_uint_from_mul_panic() {
     let _val = BIGGEST_UINT.clone() * Uint256::from(2u8);
+}
+
+#[test]
+#[should_panic]
+fn test_uint_from_mul_assign_panic() {
+    let mut val = BIGGEST_UINT.clone();
+    val *= Uint256::from(2u8);
 }
 
 #[test]
@@ -165,17 +192,25 @@ fn test_uint_div_no_panic() {
 }
 
 #[test]
-fn test_uint_from_div_assign_no_panic() {
-    assert_eq!(
-        Uint256::from(6u8).div(Uint256::from(2u8)),
-        Uint256::from(3u8)
-    );
-}
-
-#[test]
 #[should_panic]
 fn test_uint_from_div_panic() {
     let _val = BIGGEST_UINT.clone().div(Uint256::from(0u8));
+}
+
+#[test]
+fn test_uint_from_checked_div() {
+    assert!(
+        BIGGEST_UINT
+            .clone()
+            .checked_div(&Uint256::from(0u8))
+            .is_none()
+    );
+    assert!(
+        BIGGEST_UINT
+            .clone()
+            .checked_div(&Uint256::from(5u8))
+            .is_some()
+    );
 }
 
 #[test]
@@ -187,7 +222,15 @@ fn test_uint_from_div_no_panic() {
 }
 
 #[test]
+fn test_uint_from_div_assign_no_panic() {
+    let mut value = Uint256::from(6u8);
+    value /= 2u8.into();
+    assert_eq!(value, 3u8.into());
+}
+
+#[test]
 fn test_uint256() {
+    assert_eq!(BIGGEST_UINT.bits(), 256);
     assert!(
         BIGGEST_UINT.checked_add(&Uint256::from(1u32)).is_none(),
         "should return None adding 1 to biggest"
@@ -366,7 +409,7 @@ fn test_increment_2_to_the_power_of_255() {
         .parse()
         .unwrap();
     assert_eq!(value.bits(), 255);
-    value += 1u8;
+    value += 1u8.into();
     assert_eq!(value.bits(), 256);
 }
 
@@ -377,7 +420,7 @@ fn test_increment_2_to_the_power_of_256() {
         .parse()
         .unwrap();
     assert_eq!(value.bits(), 256);
-    value += 1u8;
+    value += 1u8.into();
     assert_eq!(value.bits(), 256);
 }
 
@@ -402,5 +445,5 @@ fn test_uint_underflow() {
 #[should_panic]
 fn test_uint_underflow_assign() {
     let mut value: Uint256 = Uint256::zero();
-    value -= 1u8;
+    value -= 1u8.into();
 }
