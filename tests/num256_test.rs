@@ -10,6 +10,7 @@ extern crate serde;
 use num::pow::pow;
 use num::traits::cast::ToPrimitive;
 use num::traits::ops::checked::{CheckedAdd, CheckedDiv, CheckedMul, CheckedSub};
+use num::Signed;
 use num::{BigUint, Bounded, Zero};
 use num256::{Int256, Uint256};
 use std::ops::{Add, Div, Sub};
@@ -471,7 +472,6 @@ fn test_uint_to_int() {
 }
 
 #[test]
-#[should_panic]
 fn test_int_to_uint() {
     let value = Int256::max_value();
     value.to_uint256().unwrap();
@@ -484,4 +484,10 @@ fn test_biggest_unsigned_to_int() {
     let _val2: Int256 = 4_294_967_295u32.into();
     let _val3: Int256 = 18_446_744_073_709_551_615u64.into();
     let _val4: Int256 = 340_282_366_920_938_463_463_374_607_431_768_211_455u128.into();
+}
+
+#[test]
+fn test_abs() {
+    let very_small: Int256 = Int256::min_value();
+    let _very_large: Uint256 = very_small.abs().to_uint256().unwrap();
 }

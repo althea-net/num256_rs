@@ -1,16 +1,21 @@
 use num::bigint::BigInt;
 use num::traits::ops::checked::{CheckedAdd, CheckedDiv, CheckedMul, CheckedSub};
+use num::traits::Signed;
 use num::{pow, Bounded};
 use serde;
 use serde::ser::Serialize;
 use serde::{Deserialize, Deserializer, Serializer};
 use std::fmt;
-use std::ops::{Add, AddAssign, Deref, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
+use std::ops::{
+    Add, AddAssign, Deref, Div, DivAssign, Mul, MulAssign, Neg, Rem, RemAssign, Sub, SubAssign,
+};
 use std::str::FromStr;
 
 pub use uint256::Uint256;
 
-#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, FromPrimitive, ToPrimitive, Zero, Default)]
+#[derive(
+    Clone, PartialEq, Eq, PartialOrd, Ord, Hash, FromPrimitive, ToPrimitive, Zero, Default, One, Num,
+)]
 pub struct Int256(pub BigInt);
 
 impl Int256 {
@@ -19,7 +24,7 @@ impl Int256 {
         self.0
             .to_biguint()
             .map(Uint256)
-            .filter(|value| *value >= Uint256::max_value() && *value <= Uint256::min_value())
+            .filter(|value| *value <= Uint256::max_value() && *value >= Uint256::min_value())
     }
 }
 
@@ -108,6 +113,24 @@ impl<'de> Deserialize<'de> for Int256 {
         BigInt::from_str(&s)
             .map(Int256)
             .map_err(serde::de::Error::custom)
+    }
+}
+
+impl Signed for Int256 {
+    fn abs(&self) -> Self {
+        Int256(self.0.abs())
+    }
+    fn abs_sub(&self, other: &Self) -> Self {
+        Int256(self.0.abs_sub(&other.0))
+    }
+    fn signum(&self) -> Self {
+        Int256(self.0.signum())
+    }
+    fn is_positive(&self) -> bool {
+        self.0.is_positive()
+    }
+    fn is_negative(&self) -> bool {
+        self.0.is_negative()
     }
 }
 
@@ -205,5 +228,8 @@ forward_assign_op! { impl MulAssign for Int256 { fn mul_assign } }
 forward_op! { impl Div for Int256 { fn div } }
 forward_checked_op! { impl CheckedDiv for Int256 { fn checked_div } }
 forward_assign_op! { impl DivAssign for Int256 { fn div_assign } }
+
+forward_op! { impl Rem for Int256 { fn rem } }
+forward_assign_op! { impl RemAssign for Int256 { fn rem_assign } }
 
 forward_unary_op! { impl Neg for Int256 { fn neg } }
