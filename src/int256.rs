@@ -64,6 +64,12 @@ impl_from_int!(i32);
 impl_from_int!(i64);
 impl_from_int!(i128);
 impl_from_int!(isize);
+impl_from_int!(u8);
+impl_from_int!(u16);
+impl_from_int!(u32);
+impl_from_int!(u64);
+impl_from_int!(u128);
+impl_from_int!(usize);
 
 impl<'a> From<&'a Int256> for Int256 {
     fn from(n: &Int256) -> Int256 {
