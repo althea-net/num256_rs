@@ -113,8 +113,12 @@ impl<'de> Deserialize<'de> for Uint256 {
         D: Deserializer<'de>,
     {
         let s = String::deserialize(deserializer)?;
-
-        BigUint::from_str_radix(&s, 10)
+        let (s, radix) = if s.starts_with("0x") {
+            (&s[2..], 16)
+        } else {
+            (&s[..], 10)
+        };
+        BigUint::from_str_radix(&s, radix)
             .map(Uint256)
             .map_err(serde::de::Error::custom)
     }
