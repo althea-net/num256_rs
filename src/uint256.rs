@@ -62,7 +62,7 @@ impl FromStr for Uint256 {
 
 impl fmt::Display for Uint256 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:x}", &self.0)
+        write!(f, "{}", &self.0.to_str_radix(10))
     }
 }
 
@@ -103,9 +103,7 @@ impl Serialize for Uint256 {
     where
         S: Serializer,
     {
-        let mut s = "0x".to_owned();
-        s.push_str(&format!("{:x}", self.0));
-        serializer.serialize_str(&s)
+        serializer.serialize_str(&self.0.to_str_radix(10))
     }
 }
 
@@ -115,9 +113,8 @@ impl<'de> Deserialize<'de> for Uint256 {
         D: Deserializer<'de>,
     {
         let s = String::deserialize(deserializer)?;
-        let s = if s.starts_with("0x") { &s[2..] } else { &s };
 
-        BigUint::from_str_radix(&s, 16)
+        BigUint::from_str_radix(&s, 10)
             .map(Uint256)
             .map_err(serde::de::Error::custom)
     }
@@ -275,5 +272,18 @@ fn into_array() {
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 4, 0
         ]
+    );
+}
+
+#[test]
+fn check_display() {
+    let val = Uint256::max_value();
+    assert_eq!(
+        format!("{}", val),
+        "115792089237316195423570985008687907853269984665640564039457584007913129639935"
+    );
+    assert_eq!(
+        val.to_string(),
+        "115792089237316195423570985008687907853269984665640564039457584007913129639935"
     );
 }

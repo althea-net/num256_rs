@@ -41,7 +41,7 @@ fn serialize() {
         int: Int256::min_value().clone(),
     };
 
-    let expected = "{\"uint\":\"0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\",\"int\":\"-57896044618658097711785492504343953926634992332820282019728792003956564819968\"}";
+    let expected = r#"{"uint":"115792089237316195423570985008687907853269984665640564039457584007913129639935","int":"-57896044618658097711785492504343953926634992332820282019728792003956564819968"}"#;
 
     let j = serde_json::to_string(&struc).unwrap();
 
