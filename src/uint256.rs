@@ -62,7 +62,7 @@ impl FromStr for Uint256 {
 
 impl fmt::Display for Uint256 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", &self.0.to_str_radix(10))
+        f.pad(&self.0.to_str_radix(10))
     }
 }
 
@@ -74,19 +74,37 @@ impl fmt::Debug for Uint256 {
 
 impl fmt::LowerHex for Uint256 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let hex_str = &self.0.to_str_radix(16);
+        let mut width = hex_str.len();
         if f.alternate() {
             write!(f, "0x")?;
+            width += 2;
         }
-        write!(f, "{}", self.0.to_str_radix(16))
+        if let Some(desired_width) = f.width() {
+            if desired_width > width {
+                let pad = String::from_utf8(vec![b'0'; desired_width - width]).unwrap();
+                write!(f, "{}", &pad)?;
+            }
+        }
+        write!(f, "{}", hex_str)
     }
 }
 
 impl fmt::UpperHex for Uint256 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let hex_str = &self.0.to_str_radix(16).to_uppercase();
+        let mut width = hex_str.len();
         if f.alternate() {
             write!(f, "0x")?;
+            width += 2;
         }
-        write!(f, "{}", self.0.to_str_radix(16).to_uppercase())
+        if let Some(desired_width) = f.width() {
+            if desired_width > width {
+                let pad = String::from_utf8(vec![b'0'; desired_width - width]).unwrap();
+                write!(f, "{}", &pad)?;
+            }
+        }
+        write!(f, "{}", hex_str)
     }
 }
 
@@ -259,6 +277,29 @@ fn to_hex() {
     assert_eq!(
         format!("{:#X}", lhs),
         "0xBABABABABABABABABABABABABABABABABABABABABABABABABABABABABABABABA"
+    );
+}
+
+#[test]
+fn to_hex_with_padding() {
+    let lhs: Uint256 = "0xbababababababababababababababababababababababababababa"
+        .parse()
+        .unwrap();
+    assert_eq!(
+        format!("{:#066x}", lhs),
+        "0x0000000000bababababababababababababababababababababababababababa"
+    );
+    assert_eq!(
+        format!("{:064x}", lhs),
+        "0000000000bababababababababababababababababababababababababababa"
+    );
+    assert_eq!(
+        format!("{:064X}", lhs),
+        "0000000000BABABABABABABABABABABABABABABABABABABABABABABABABABABA"
+    );
+    assert_eq!(
+        format!("{:#066X}", lhs),
+        "0x0000000000BABABABABABABABABABABABABABABABABABABABABABABABABABABA"
     );
 }
 
