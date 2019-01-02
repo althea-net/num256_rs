@@ -62,7 +62,7 @@ impl FromStr for Uint256 {
 
 impl fmt::Display for Uint256 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.pad(&self.0.to_str_radix(10))
+        write!(f, "{}", &self.0.to_str_radix(10))
     }
 }
 
