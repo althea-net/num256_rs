@@ -132,7 +132,17 @@ impl<'de> Deserialize<'de> for Uint256 {
     {
         let s = String::deserialize(deserializer)?;
 
-        BigUint::from_str_radix(&s, 10)
+        // Decide how to deserialize 256 bit integer based on the representation.
+        // "0x" prefix means the string contains hexadecmial representation of the number,
+        // lack of it means its decimal.
+        let (radix, data) = if s.starts_with("0x") {
+            (16, &s[2..])
+        } else {
+            (10, s.as_str())
+        };
+
+        // Create Uint256 given the sliced data, and radix
+        BigUint::from_str_radix(data, radix)
             .map(Uint256)
             .map_err(serde::de::Error::custom)
     }

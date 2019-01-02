@@ -53,6 +53,15 @@ fn serialize() {
 }
 
 #[test]
+fn serialize_from_hex() {
+    let expected = r#"{"uint":"0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff","int":"-57896044618658097711785492504343953926634992332820282019728792003956564819968"}"#;
+    let m: MyStruct = serde_json::from_str(expected).unwrap();
+
+    assert_eq!(BIGGEST_UINT.clone(), m.uint);
+    assert_eq!(Int256::min_value().clone(), m.int);
+}
+
+#[test]
 fn test_from_uint() {
     let (a, b, c, d, e) = (
         Uint256::from(8u8),
