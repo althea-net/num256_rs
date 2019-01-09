@@ -90,7 +90,7 @@ impl fmt::Display for Int256 {
 
 impl fmt::Debug for Int256 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Int256({})", self.to_string())
+        write!(f, "Int256({})", &self.0.to_str_radix(10))
     }
 }
 
