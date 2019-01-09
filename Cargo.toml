@@ -1,6 +1,6 @@
 [package]
 name = "num256"
-version = "0.2.9"
+version = "0.2.10"
 authors = ["Jehan <jehan.tremback@gmail.com>"]
 include = [
     "**/*.rs",
