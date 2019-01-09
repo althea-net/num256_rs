@@ -68,7 +68,7 @@ impl fmt::Display for Uint256 {
 
 impl fmt::Debug for Uint256 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Uint256({})", self.to_string())
+        write!(f, "Uint256({})", &self.0.to_str_radix(10))
     }
 }
 
