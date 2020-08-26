@@ -11,7 +11,7 @@ repository = "https://github.com/althea-mesh/num256_rs"
 license-file = "LICENSE"
 
 [dependencies]
-num = "0.2"
+num = "0.3"
 serde = "1.0"
 failure = "0.1"
 num-derive = "0.3"
