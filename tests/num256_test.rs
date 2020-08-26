@@ -38,7 +38,7 @@ pub struct MyStruct {
 fn serialize() {
     let struc = MyStruct {
         uint: BIGGEST_UINT.clone(),
-        int: Int256::min_value().clone(),
+        int: Int256::min_value(),
     };
 
     let expected = r#"{"uint":"115792089237316195423570985008687907853269984665640564039457584007913129639935","int":"-57896044618658097711785492504343953926634992332820282019728792003956564819968"}"#;
@@ -49,7 +49,7 @@ fn serialize() {
     let m: MyStruct = serde_json::from_str(expected).unwrap();
 
     assert_eq!(BIGGEST_UINT.clone(), m.uint);
-    assert_eq!(Int256::min_value().clone(), m.int);
+    assert_eq!(Int256::min_value(), m.int);
 }
 
 #[test]
@@ -58,7 +58,7 @@ fn serialize_from_hex() {
     let m: MyStruct = serde_json::from_str(expected).unwrap();
 
     assert_eq!(BIGGEST_UINT.clone(), m.uint);
-    assert_eq!(Int256::min_value().clone(), m.int);
+    assert_eq!(Int256::min_value(), m.int);
 }
 
 #[test]
@@ -285,18 +285,18 @@ fn test_uint256() {
 #[test]
 #[should_panic]
 fn test_int_add_panic() {
-    let _val = Int256::max_value().clone() + Int256::from(1);
+    let _val = Int256::max_value() + Int256::from(1);
 }
 
 #[test]
 fn test_int_add_no_panic() {
-    let _val = Int256::max_value().clone() + Int256::from(0);
+    let _val = Int256::max_value() + Int256::from(0);
 }
 
 #[test]
 #[should_panic]
 fn test_int_sub_panic() {
-    let _val = Int256::min_value().clone() - Int256::from(1);
+    let _val = Int256::min_value() - Int256::from(1);
 }
 
 #[test]
@@ -314,7 +314,7 @@ fn test_int_sub_no_panic() {
 #[test]
 #[should_panic]
 fn test_int_mul_panic() {
-    let _val = Int256::min_value().clone() * Int256::from(2);
+    let _val = Int256::min_value() * Int256::from(2);
 }
 
 #[test]
@@ -325,7 +325,7 @@ fn test_int_mul_no_panic() {
 #[test]
 #[should_panic]
 fn test_int_div_panic() {
-    let _val = Int256::min_value().clone() / Int256::from(0);
+    let _val = Int256::min_value() / Int256::from(0);
 }
 
 #[test]
@@ -336,18 +336,18 @@ fn test_int_div_no_panic() {
 #[test]
 #[should_panic]
 fn test_int_from_add_panic() {
-    let _val = Int256::max_value().clone() + 1.into();
+    let _val = Int256::max_value() + 1.into();
 }
 
 #[test]
 fn test_int_from_add_no_panic() {
-    let _val = Int256::max_value().clone() + 0.into();
+    let _val = Int256::max_value() + 0.into();
 }
 
 #[test]
 #[should_panic]
 fn test_int_from_sub_panic() {
-    let _val = Int256::min_value().clone() - 1.into();
+    let _val = Int256::min_value() - 1.into();
 }
 
 #[test]
@@ -358,7 +358,7 @@ fn test_int_from_sub_no_panic() {
 #[test]
 #[should_panic]
 fn test_int_from_mul_panic() {
-    let _val = Int256::min_value().clone() * 2.into();
+    let _val = Int256::min_value() * 2.into();
 }
 
 #[test]
@@ -369,7 +369,7 @@ fn test_int_from_mul_no_panic() {
 #[test]
 #[should_panic]
 fn test_int_from_div_panic() {
-    let _val = Int256::min_value().clone() / 0.into();
+    let _val = Int256::min_value() / 0.into();
 }
 
 #[test]
@@ -385,10 +385,7 @@ fn test_uint_to_int_panic() {
 
 #[test]
 fn test_int256() {
-    assert_eq!(
-        Int256::max_value().clone() + Int256::zero(),
-        Int256::max_value().clone()
-    );
+    assert_eq!(Int256::max_value() + Int256::zero(), Int256::max_value());
 
     assert!(
         Int256::max_value().checked_add(&Int256::from(1)).is_none(),

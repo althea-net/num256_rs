@@ -2,7 +2,6 @@ use num::bigint::BigInt;
 use num::traits::ops::checked::{CheckedAdd, CheckedDiv, CheckedMul, CheckedSub};
 use num::traits::Signed;
 use num::{pow, Bounded};
-use serde;
 use serde::ser::Serialize;
 use serde::{Deserialize, Deserializer, Serializer};
 use std::fmt;
@@ -11,7 +10,7 @@ use std::ops::{
 };
 use std::str::FromStr;
 
-pub use uint256::Uint256;
+pub use crate::uint256::Uint256;
 
 #[derive(
     Clone, PartialEq, Eq, PartialOrd, Ord, Hash, FromPrimitive, ToPrimitive, Zero, Default, One, Num,

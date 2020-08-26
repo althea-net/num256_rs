@@ -6,7 +6,6 @@ use num::traits::ops::checked::{CheckedAdd, CheckedDiv, CheckedMul, CheckedSub};
 use num::BigUint;
 use num::Num;
 use num::{pow, Bounded, Zero};
-use serde;
 use serde::ser::Serialize;
 use serde::{Deserialize, Deserializer, Serializer};
 use std::default::Default;
