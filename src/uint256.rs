@@ -1,5 +1,4 @@
 pub use super::Int256;
-use failure::Error;
 use num::bigint::ParseBigIntError;
 use num::bigint::ToBigInt;
 use num::traits::ops::checked::{CheckedAdd, CheckedDiv, CheckedMul, CheckedSub};
@@ -49,7 +48,7 @@ impl Bounded for Uint256 {
 }
 
 impl FromStr for Uint256 {
-    type Err = Error;
+    type Err = ParseBigIntError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if s.starts_with("0x") {
             Ok(BigUint::from_str_radix(&s[2..], 16).map(Uint256)?)
