@@ -7,7 +7,7 @@ include = [
     "Cargo.toml"
 ]
 description = "Implementation of 256 bit integers"
-repository = "https://github.com/althea-mesh/num256_rs"
+repository = "https://github.com/althea-net/num256_rs"
 license-file = "LICENSE"
 edition = '2018'
 
