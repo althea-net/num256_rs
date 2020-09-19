@@ -1,4 +1,3 @@
-extern crate failure;
 #[macro_use]
 extern crate num_derive;
 #[macro_use]
