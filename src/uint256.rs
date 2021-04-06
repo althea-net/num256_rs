@@ -12,7 +12,9 @@ use std::fmt;
 use std::ops::{Add, AddAssign, Deref, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
 use std::str::FromStr;
 
-#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, FromPrimitive, ToPrimitive, Zero, Default)]
+#[derive(
+    Clone, PartialEq, Eq, PartialOrd, Ord, Hash, FromPrimitive, ToPrimitive, Zero, Default,
+)]
 pub struct Uint256(pub BigUint);
 
 impl Uint256 {
@@ -50,8 +52,8 @@ impl Bounded for Uint256 {
 impl FromStr for Uint256 {
     type Err = ParseBigIntError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if s.starts_with("0x") {
-            Ok(BigUint::from_str_radix(&s[2..], 16).map(Uint256)?)
+        if let Some(val) = s.strip_prefix("0x") {
+            Ok(BigUint::from_str_radix(val, 16).map(Uint256)?)
         } else {
             Ok(BigUint::from_str_radix(&s, 10).map(Uint256)?)
         }
@@ -133,8 +135,8 @@ impl<'de> Deserialize<'de> for Uint256 {
         // Decide how to deserialize 256 bit integer based on the representation.
         // "0x" prefix means the string contains hexadecmial representation of the number,
         // lack of it means its decimal.
-        let (radix, data) = if s.starts_with("0x") {
-            (16, &s[2..])
+        let (radix, data) = if let Some(val) = s.strip_prefix("0x") {
+            (16, val)
         } else {
             (10, s.as_str())
         };
@@ -158,6 +160,7 @@ impl<'a> From<&'a [u8]> for Uint256 {
     }
 }
 
+#[allow(clippy::from_over_into)]
 impl Into<[u8; 32]> for Uint256 {
     fn into(self) -> [u8; 32] {
         let bytes = self.0.to_bytes_be();

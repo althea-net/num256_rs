@@ -62,6 +62,7 @@ fn serialize_from_hex() {
 }
 
 #[test]
+#[allow(clippy::many_single_char_names)]
 fn test_from_uint() {
     let (a, b, c, d, e) = (
         Uint256::from(8u8),
@@ -85,13 +86,14 @@ fn test_from_uint_to_int() {
 }
 
 #[test]
+#[allow(clippy::many_single_char_names)]
 fn test_from_int() {
     let (a, b, c, d, e) = (
-        Int256::from(-8 as i8),
-        Int256::from(-8 as i16),
-        Int256::from(-8 as i32),
-        Int256::from(-8 as i64),
-        Int256::from(-8 as isize),
+        Int256::from(-8i8),
+        Int256::from(-8i16),
+        Int256::from(-8i32),
+        Int256::from(-8i64),
+        Int256::from(-8isize),
     );
 
     assert_eq!(a, b);
