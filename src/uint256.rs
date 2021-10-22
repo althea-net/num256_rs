@@ -55,7 +55,7 @@ impl FromStr for Uint256 {
         if let Some(val) = s.strip_prefix("0x") {
             Ok(BigUint::from_str_radix(val, 16).map(Uint256)?)
         } else {
-            Ok(BigUint::from_str_radix(&s, 10).map(Uint256)?)
+            Ok(BigUint::from_str_radix(s, 10).map(Uint256)?)
         }
     }
 }

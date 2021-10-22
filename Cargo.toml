@@ -1,6 +1,6 @@
 [package]
 name = "num256"
-version = "0.3.1"
+version = "0.3.2"
 authors = ["Jehan <jehan.tremback@gmail.com>"]
 include = [
     "**/*.rs",
@@ -9,7 +9,7 @@ include = [
 description = "Implementation of 256 bit integers"
 repository = "https://github.com/althea-net/num256_rs"
 license-file = "LICENSE"
-edition = '2018'
+edition = '2021'
 
 [dependencies]
 num = "0.4"
