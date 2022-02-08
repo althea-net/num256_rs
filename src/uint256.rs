@@ -22,7 +22,9 @@ impl Uint256 {
         Uint256(BigUint::from_bytes_le(slice))
     }
     pub fn from_bytes_be(slice: &[u8]) -> Uint256 {
-        Uint256(BigUint::from_bytes_be(slice))
+        // if a value larger than 32 bytes is provided, take
+        // the first 32 bytes
+        Uint256(BigUint::from_bytes_be(&slice[0..32]))
     }
     pub fn from_str_radix(s: &str, radix: u32) -> Result<Uint256, ParseBigIntError> {
         BigUint::from_str_radix(s, radix).map(Uint256)
@@ -156,7 +158,9 @@ impl From<[u8; 32]> for Uint256 {
 
 impl<'a> From<&'a [u8]> for Uint256 {
     fn from(n: &'a [u8]) -> Uint256 {
-        Uint256(BigUint::from_bytes_be(n))
+        // if a value larger than 32 bytes is provided, take
+        // the first 32 bytes
+        Uint256(BigUint::from_bytes_be(&n[0..32]))
     }
 }
 
