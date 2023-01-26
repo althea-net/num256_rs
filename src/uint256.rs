@@ -1,86 +1,184 @@
 pub use super::Int256;
-use num::bigint::ParseBigIntError;
-use num::bigint::ToBigInt;
-use num::traits::ops::checked::{CheckedAdd, CheckedDiv, CheckedMul, CheckedSub};
-use num::BigUint;
-use num::Num;
-use num::{pow, Bounded, Zero};
-use serde::ser::Serialize;
-use serde::{Deserialize, Deserializer, Serializer};
+use serde::de::Error as SerdeError;
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::default::Default;
 use std::fmt;
-use std::ops::{Add, AddAssign, Deref, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
+use std::num::{IntErrorKind, ParseIntError};
+use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
 use std::str::FromStr;
 
-#[derive(
-    Clone, PartialEq, Eq, PartialOrd, Ord, Hash, FromPrimitive, ToPrimitive, Zero, Default,
-)]
-pub struct Uint256(pub BigUint);
-
-impl Uint256 {
-    pub fn from_bytes_le(slice: &[u8]) -> Uint256 {
-        Uint256(BigUint::from_bytes_le(slice))
-    }
-    pub fn from_bytes_be(slice: &[u8]) -> Uint256 {
-        if slice.len() >= 32 {
-            // if a value larger than 32 bytes is provided, take
-            // the first 32 bytes
-            Uint256(BigUint::from_bytes_be(&slice[0..32]))
-        } else {
-            Uint256(BigUint::from_bytes_be(slice))
-        }
-    }
-    pub fn from_str_radix(s: &str, radix: u32) -> Result<Uint256, ParseBigIntError> {
-        BigUint::from_str_radix(s, radix).map(Uint256)
-    }
-    /// Converts value to a signed 256 bit integer
-    pub fn to_int256(&self) -> Option<Int256> {
-        self.0
-            .to_bigint()
-            .filter(|value| value.bits() <= 255)
-            .map(Int256)
-    }
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
+pub struct Uint256 {
+    /// lower bits, little endian internal representation
+    upper: u128,
+    lower: u128,
 }
 
-impl Bounded for Uint256 {
-    fn min_value() -> Self {
-        // -2**255
-        Uint256::zero()
+impl Uint256 {
+    pub const fn min_value() -> Uint256 {
+        Uint256::MIN
     }
-    fn max_value() -> Self {
-        lazy_static! {
-            static ref MAX_VALUE: BigUint = pow(BigUint::from(2u32), 256) - BigUint::from(1u32);
+
+    pub const MIN: Uint256 = Uint256 {
+        upper: u128::MAX,
+        lower: u128::MAX,
+    };
+
+    pub const fn max_value() -> Uint256 {
+        Uint256::MAX
+    }
+
+    pub const MAX: Uint256 = Uint256 {
+        upper: u128::MAX,
+        lower: u128::MAX,
+    };
+
+    /// Converts value to a signed 256 bit integer
+    pub fn to_int256(&self) -> Option<Int256> {
+        if *self > Int256::MAX.to_uint256().unwrap() {
+            return None;
+        } else {
+            Some(Int256 {
+                sign: false,
+                upper: self.upper,
+                lower: self.lower,
+            })
         }
-        Uint256(MAX_VALUE.clone())
+    }
+
+    pub fn from_le_bytes(slice: [u8; 32]) -> Uint256 {
+        let mut upper: [u8; 16];
+        let mut lower: [u8; 16];
+        upper.copy_from_slice(&slice[16..32]);
+        lower.copy_from_slice(&slice[0..16]);
+        Uint256 {
+            upper: u128::from_le_bytes(upper),
+            lower: u128::from_le_bytes(lower),
+        }
+    }
+    pub fn to_le_bytes(&self) -> [u8; 32] {
+        let mut res = [0; 32];
+        let bytes = self.lower.to_le_bytes().to_vec();
+        bytes.extend(self.lower.to_le_bytes());
+        res.clone_from_slice(&bytes[0..32]);
+        res
+    }
+    pub fn from_be_bytes(slice: [u8; 32]) -> Uint256 {
+        let mut upper: [u8; 16];
+        let mut lower: [u8; 16];
+        upper.copy_from_slice(&slice[0..16]);
+        lower.copy_from_slice(&slice[16..32]);
+        Uint256 {
+            upper: u128::from_be_bytes(upper),
+            lower: u128::from_be_bytes(lower),
+        }
+    }
+    pub fn to_be_bytes(&self) -> [u8; 32] {
+        let mut res = [0; 32];
+        let bytes = self.upper.to_be_bytes().to_vec();
+        bytes.extend(self.lower.to_be_bytes());
+        res.clone_from_slice(&bytes[0..32]);
+        res
+    }
+    fn to_str_radix(&self, radix: u32) -> String {
+        assert!(
+            radix >= 2 && radix <= 36,
+            "to_str_radix_int: must lie in the range `[2, 36]` - found {}",
+            radix
+        );
+    }
+    fn from_str_radix(src: &str, radix: u32) -> Result<Uint256, ParseIntError> {
+        use self::ParseIntError as PIE;
+        use std::num::IntErrorKind::*;
+
+        assert!(
+            radix >= 2 && radix <= 36,
+            "from_str_radix_int: must lie in the range `[2, 36]` - found {}",
+            radix
+        );
+
+        if src.is_empty() {
+            return Err(PIE { kind: Empty });
+        }
+
+        let is_signed_ty = Uint256::from_u32(0) > Uint256::min_value();
+
+        // all valid digits are ascii, so we will just iterate over the utf8 bytes
+        // and cast them to chars. .to_digit() will safely return None for anything
+        // other than a valid ascii digit for the given radix, including the first-byte
+        // of multi-byte sequences
+        let src = src.as_bytes();
+
+        let (is_positive, digits) = match src[0] {
+            b'+' => (true, &src[1..]),
+            b'-' if is_signed_ty => (false, &src[1..]),
+            _ => (true, src),
+        };
+
+        if digits.is_empty() {
+            return Err(PIE { kind: Empty });
+        }
+
+        let mut result = Uint256::from_u32(0);
+        if is_positive {
+            // The number is positive
+            for &c in digits {
+                let x = match (c as char).to_digit(radix) {
+                    Some(x) => x,
+                    None => return Err(PIE { kind: InvalidDigit }),
+                };
+                result = match result.checked_mul(radix) {
+                    Some(result) => result,
+                    None => {
+                        return Err(PIE {
+                            kind: IntErrorKind::PosOverflow,
+                        })
+                    }
+                };
+                result = match result.checked_add(x) {
+                    Some(result) => result,
+                    None => {
+                        return Err(PIE {
+                            kind: IntErrorKind::PosOverflow,
+                        })
+                    }
+                };
+            }
+        } else {
+            return Err(PIE {
+                kind: IntErrorKind::InvalidDigit,
+            });
+        }
+        Ok(result)
     }
 }
 
 impl FromStr for Uint256 {
-    type Err = ParseBigIntError;
+    type Err = ParseIntError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if let Some(val) = s.strip_prefix("0x") {
-            Ok(BigUint::from_str_radix(val, 16).map(Uint256)?)
+            Uint256::from_str_radix(val, 16)
         } else {
-            Ok(BigUint::from_str_radix(s, 10).map(Uint256)?)
+            Uint256::from_str_radix(s, 10)
         }
     }
 }
 
 impl fmt::Display for Uint256 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", &self.0.to_str_radix(10))
+        write!(f, "{}", &self.to_str_radix(10))
     }
 }
 
 impl fmt::Debug for Uint256 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Uint256({})", &self.0.to_str_radix(10))
+        write!(f, "Uint256({})", &self.to_str_radix(10))
     }
 }
 
 impl fmt::LowerHex for Uint256 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let hex_str = &self.0.to_str_radix(16);
+        let hex_str = &self.to_str_radix(16);
         let mut width = hex_str.len();
         if f.alternate() {
             write!(f, "0x")?;
@@ -98,7 +196,7 @@ impl fmt::LowerHex for Uint256 {
 
 impl fmt::UpperHex for Uint256 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let hex_str = &self.0.to_str_radix(16).to_uppercase();
+        let hex_str = &self.to_str_radix(16).to_uppercase();
         let mut width = hex_str.len();
         if f.alternate() {
             write!(f, "0x")?;
@@ -114,20 +212,12 @@ impl fmt::UpperHex for Uint256 {
     }
 }
 
-impl Deref for Uint256 {
-    type Target = BigUint;
-
-    fn deref(&self) -> &BigUint {
-        &self.0
-    }
-}
-
 impl Serialize for Uint256 {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
-        serializer.serialize_str(&self.0.to_str_radix(10))
+        serializer.serialize_str(&self.to_str_radix(10))
     }
 }
 
@@ -148,30 +238,39 @@ impl<'de> Deserialize<'de> for Uint256 {
         };
 
         // Create Uint256 given the sliced data, and radix
-        BigUint::from_str_radix(data, radix)
-            .map(Uint256)
-            .map_err(serde::de::Error::custom)
+        match Uint256::from_str_radix(data, radix) {
+            Ok(v) => Ok(v),
+            Err(e) => Err(SerdeError::custom(e.to_string())),
+        }
     }
 }
 
 impl From<[u8; 32]> for Uint256 {
     fn from(n: [u8; 32]) -> Uint256 {
-        Uint256(BigUint::from_bytes_be(&n))
+        Uint256::from_le_bytes(n)
     }
 }
 
 impl<'a> From<&'a [u8]> for Uint256 {
     fn from(n: &'a [u8]) -> Uint256 {
+        let mut bytes: [u8; 32];
         // if a value larger than 32 bytes is provided, take
         // the first 32 bytes
-        Uint256(BigUint::from_bytes_be(&n[0..32]))
+        let mut count = 0;
+        for i in n.iter() {
+            if count > 31 {
+                break;
+            }
+            bytes[count] = *i;
+        }
+        Uint256::from_be_bytes(bytes)
     }
 }
 
 #[allow(clippy::from_over_into)]
 impl Into<[u8; 32]> for Uint256 {
     fn into(self) -> [u8; 32] {
-        let bytes = self.0.to_bytes_be();
+        let bytes = self.to_be_bytes();
         let mut res: [u8; 32] = Default::default();
         res[32 - bytes.len()..].copy_from_slice(&bytes);
         res
@@ -183,7 +282,7 @@ macro_rules! uint_impl_from_uint {
         impl From<$T> for Uint256 {
             #[inline]
             fn from(n: $T) -> Self {
-                Uint256(BigUint::from(n))
+                Uint256::from(n)
             }
         }
     };
@@ -197,68 +296,21 @@ uint_impl_from_uint!(u64);
 uint_impl_from_uint!(u128);
 uint_impl_from_uint!(usize);
 
-/// A macro that forwards an unary operator trait i.e. Add
-macro_rules! forward_op {
-    (impl $trait_: ident for $type_: ident { fn $method: ident }) => {
-        impl $trait_<$type_> for $type_ {
-            type Output = $type_;
+impl Add for Uint256 {}
 
-            fn $method(self, $type_(b): $type_) -> $type_ {
-                let $type_(a) = self;
-                let res = a.$method(&b);
-                if res.bits() > 256 {
-                    panic!("attempt to {} with overflow", stringify!($method));
-                }
-                $type_(res)
-            }
-        }
-    };
-}
+impl Sub for Uint256 {}
 
-/// A macro that forwards a checked operator i.e. CheckedAdd
-macro_rules! forward_checked_op {
-    (impl $trait_: ident for $type_: ident { fn $method: ident }) => {
-        impl $trait_ for $type_ {
-            fn $method(&self, $type_(b): &$type_) -> Option<$type_> {
-                let $type_(a) = self;
-                a.$method(&b)
-                    .filter(|value| value.bits() <= 256)
-                    .map($type_)
-            }
-        }
-    };
-}
+impl Mul for Uint256 {}
 
-/// A macro that forwards a assignment operator i.e. AddAssign
-macro_rules! forward_assign_op {
-    (impl $trait_: ident for $type_: ident { fn $method: ident }) => {
-        impl $trait_ for $type_ {
-            fn $method(&mut self, $type_(b): $type_) {
-                let a = &mut self.0;
-                a.$method(b);
-                if a.bits() > 256 {
-                    panic!("attempt to {} with overflow", stringify!($method));
-                }
-            }
-        }
-    };
-}
+impl Div for Uint256 {}
 
-forward_op! { impl Add for Uint256 { fn add } }
-forward_checked_op! { impl CheckedAdd for Uint256 { fn checked_add } }
-forward_assign_op! { impl AddAssign for Uint256 { fn add_assign } }
+impl AddAssign for Uint256 {}
 
-forward_op! { impl Sub for Uint256 { fn sub } }
-forward_checked_op! { impl CheckedSub for Uint256 { fn checked_sub } }
-forward_assign_op! { impl SubAssign for Uint256 { fn sub_assign } }
+impl SubAssign for Uint256 {}
 
-forward_op! { impl Mul for Uint256 { fn mul } }
-forward_checked_op! { impl CheckedMul for Uint256 { fn checked_mul } }
-forward_assign_op! { impl MulAssign for Uint256 { fn mul_assign } }
+impl MulAssign for Uint256 {}
 
-forward_op! { impl Div for Uint256 { fn div } }
-forward_checked_op! { impl CheckedDiv for Uint256 { fn checked_div } }
-forward_assign_op! { impl DivAssign for Uint256 { fn div_assign } }
+impl DivAssign for Uint256 {}
 
 #[test]
 fn create_from_32_bytes() {
