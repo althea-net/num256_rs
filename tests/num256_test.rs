@@ -1,30 +1,21 @@
 extern crate num256;
 #[macro_use]
 extern crate lazy_static;
-extern crate num;
 extern crate serde_json;
 #[macro_use]
 extern crate serde_derive;
 extern crate serde;
 
-use num::pow::pow;
-use num::traits::cast::ToPrimitive;
-use num::traits::ops::checked::{CheckedAdd, CheckedDiv, CheckedMul, CheckedSub};
-use num::Signed;
-use num::{BigUint, Bounded, Zero};
 use num256::{Int256, Uint256};
+use num_traits::{Bounded, Zero, Signed, CheckedAdd, CheckedSub, ToPrimitive, CheckedMul};
 use std::ops::{Add, Div, Sub};
 
 lazy_static! {
     static ref BIGGEST_UINT: Uint256 = {
-        let res = pow(BigUint::from(2u8), 256) - BigUint::from(1u8);
-        assert!(res.bits() == 256);
-        Uint256(res)
+        Uint256::max_value()
     };
     static ref BIGGEST_INT_AS_UINT: Uint256 = {
-        let mut biggest_int_le = [255u8; 32];
-        biggest_int_le[31] = 127;
-        Uint256::from_bytes_le(&biggest_int_le)
+        Int256::max_value().to_uint256().unwrap()
     };
 }
 
@@ -218,11 +209,11 @@ fn test_uint_from_div_panic() {
 fn test_uint_from_checked_div() {
     assert!(BIGGEST_UINT
         .clone()
-        .checked_div(&Uint256::from(0u8))
+        .checked_div(*Uint256::from(0u8))
         .is_none());
     assert!(BIGGEST_UINT
         .clone()
-        .checked_div(&Uint256::from(5u8))
+        .checked_div(*Uint256::from(5u8))
         .is_some());
 }
 

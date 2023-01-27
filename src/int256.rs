@@ -1,53 +1,113 @@
-use num::bigint::BigInt;
-use num::traits::ops::checked::{CheckedAdd, CheckedDiv, CheckedMul, CheckedSub};
-use num::traits::Signed;
-use num::{pow, Bounded};
+use bnum::errors::ParseIntError;
+use bnum::BInt;
+use num_traits::{
+    Bounded, CheckedAdd, CheckedDiv, CheckedMul, CheckedSub, FromPrimitive, Num, One, Signed,
+    ToPrimitive, Zero,
+};
 use serde::ser::Serialize;
 use serde::{Deserialize, Deserializer, Serializer};
-use std::fmt;
+use std::fmt::{self};
 use std::ops::{
-    Add, AddAssign, Deref, Div, DivAssign, Mul, MulAssign, Neg, Rem, RemAssign, Sub, SubAssign,
+    Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Rem, RemAssign, Sub, SubAssign,
 };
 use std::str::FromStr;
 
 pub use crate::uint256::Uint256;
 
-#[derive(
-    Clone, PartialEq, Eq, PartialOrd, Ord, Hash, FromPrimitive, ToPrimitive, Zero, Default, One, Num,
-)]
-pub struct Int256(pub BigInt);
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
+pub struct Int256(pub BInt<256>);
 
 impl Int256 {
-    /// Checked conversion to Uint256
+    /// Checked conversion t
+    /// o Uint256
     pub fn to_uint256(&self) -> Option<Uint256> {
-        self.0
-            .to_biguint()
-            .map(Uint256)
-            .filter(|value| *value <= Uint256::max_value() && *value >= Uint256::min_value())
+        if *self < Int256::zero() {
+            return None;
+        } else {
+            Some(Uint256(self.0.unsigned_abs()))
+        }
+    }
+
+    pub fn to_str_radix(&self, rdx: u32) -> String {
+        self.0.to_str_radix(rdx)
+    }
+}
+
+impl Num for Int256 {
+    type FromStrRadixErr = bnum::errors::ParseIntError;
+
+    fn from_str_radix(str: &str, radix: u32) -> Result<Self, Self::FromStrRadixErr> {
+        let res = BInt::<256>::from_str_radix(str, radix)?;
+        Ok(Int256(res))
+    }
+}
+
+impl One for Int256 {
+    fn one() -> Self {
+        Int256(BInt::<256>::ONE)
+    }
+}
+
+impl Zero for Int256 {
+    fn zero() -> Self {
+        Int256(BInt::<256>::ZERO)
+    }
+
+    fn is_zero(&self) -> bool {
+        *self == Int256::zero()
+    }
+}
+
+impl FromPrimitive for Int256 {
+    fn from_i64(n: i64) -> Option<Self> {
+        let val: BInt<256> = n.into();
+        Some(Int256(val))
+    }
+
+    fn from_u64(n: u64) -> Option<Self> {
+        let val: BInt<256> = n.into();
+        Some(Int256(val))
+    }
+}
+
+impl ToPrimitive for Int256 {
+    fn to_i64(&self) -> Option<i64> {
+        match self.0.try_into() {
+            Ok(v) => Some(v),
+            Err(_) => None,
+        }
+    }
+
+    fn to_u64(&self) -> Option<u64> {
+        match self.0.try_into() {
+            Ok(v) => Some(v),
+            Err(_) => None,
+        }
+    }
+}
+
+impl Neg for Int256 {
+    type Output = Int256;
+
+    fn neg(self) -> Self::Output {
+        Int256(self.0.neg())
     }
 }
 
 impl Bounded for Int256 {
     fn min_value() -> Self {
-        lazy_static! {
-            static ref MIN_VALUE: BigInt = -pow(BigInt::from(2), 255);
-        }
-        // -2**255
-        Int256(MIN_VALUE.clone())
+        let min_value: Int256 =
+            "-57896044618658097711785492504343953926634992332820282019728792003956564819968"
+                .parse()
+                .unwrap();
+        min_value
     }
     fn max_value() -> Self {
-        lazy_static! {
-            static ref MAX_VALUE: BigInt = pow(BigInt::from(2), 255) - BigInt::from(1);
-        }
-        Int256(MAX_VALUE.clone())
-    }
-}
-
-impl Deref for Int256 {
-    type Target = BigInt;
-
-    fn deref(&self) -> &BigInt {
-        &self.0
+        let min_value: Int256 =
+            "57896044618658097711785492504343953926634992332820282019728792003956564819967"
+                .parse()
+                .unwrap();
+        min_value
     }
 }
 
@@ -56,7 +116,7 @@ macro_rules! impl_from_int {
         impl From<$T> for Int256 {
             #[inline]
             fn from(n: $T) -> Self {
-                Int256(BigInt::from(n))
+                Int256(BInt::<256>::from(n))
             }
         }
     };
@@ -77,7 +137,25 @@ impl_from_int!(usize);
 
 impl<'a> From<&'a Int256> for Int256 {
     fn from(n: &Int256) -> Int256 {
-        n.clone()
+        *n
+    }
+}
+
+impl FromStr for Int256 {
+    type Err = ParseIntError;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Int256(BInt::<256>::from_str_radix(s, 10)?))
+    }
+}
+
+impl TryFrom<Uint256> for Int256 {
+    type Error = ();
+
+    fn try_from(value: Uint256) -> Result<Self, Self::Error> {
+        match value.to_int256() {
+            Some(v) => Ok(v),
+            None => Err(()),
+        }
     }
 }
 
@@ -109,7 +187,7 @@ impl<'de> Deserialize<'de> for Int256 {
     {
         let s = String::deserialize(deserializer)?;
 
-        BigInt::from_str(&s)
+        BInt::<256>::from_str(&s)
             .map(Int256)
             .map_err(serde::de::Error::custom)
     }
@@ -120,7 +198,11 @@ impl Signed for Int256 {
         Int256(self.0.abs())
     }
     fn abs_sub(&self, other: &Self) -> Self {
-        Int256(self.0.abs_sub(&other.0))
+        if self <= other {
+            Int256::zero()
+        } else {
+            *self - *other
+        }
     }
     fn signum(&self) -> Self {
         Int256(self.0.signum())
@@ -142,6 +224,7 @@ macro_rules! forward_op {
             fn $method(self, $type_(b): $type_) -> $type_ {
                 let $type_(a) = self;
                 let res = $type_(a.$method(&b));
+                // bounds check
                 if res > Int256::max_value() {
                     panic!("attempt to {} with overflow", stringify!($method));
                 } else if res < Int256::min_value() {
@@ -160,9 +243,19 @@ macro_rules! forward_checked_op {
         impl $trait_ for $type_ {
             fn $method(&self, $type_(b): &$type_) -> Option<$type_> {
                 let $type_(a) = self;
-                a.$method(&b)
-                    .filter(|value| value >= &Int256::min_value() && value <= &Int256::max_value())
-                    .map($type_)
+                let value = a.$method(*b);
+                match value {
+                    Some(value) => {
+                        let value = Int256(value);
+                        // bounds check
+                        if value > Int256::max_value() || value < Int256::min_value() {
+                            None
+                        } else {
+                            Some(value)
+                        }
+                    }
+                    None => None,
+                }
             }
         }
     };
@@ -178,35 +271,13 @@ macro_rules! forward_assign_op {
                     let a = &mut self.0;
                     a.$method(b);
                 }
-                // Check bounds
+                // bounds check
                 if *self > Int256::max_value() {
                     panic!("attempt to {} with overflow", stringify!($method));
                 }
                 if *self < Int256::min_value() {
                     panic!("attempt to {} with underflow", stringify!($method));
                 }
-            }
-        }
-    };
-}
-
-macro_rules! forward_unary_op {
-    (impl $trait_: ident for $type_: ident { fn $method: ident }) => {
-        impl $trait_ for $type_ {
-            type Output = $type_;
-
-            fn $method(self) -> $type_ {
-                let $type_(a) = self;
-                let res = $type_(a.$method());
-                // Check bounds
-                if res > Int256::max_value() {
-                    panic!("attempt to {} with overflow", stringify!($method));
-                }
-                if res < Int256::min_value() {
-                    panic!("attempt to {} with underflow", stringify!($method));
-                }
-
-                res
             }
         }
     };
@@ -230,5 +301,3 @@ forward_assign_op! { impl DivAssign for Int256 { fn div_assign } }
 
 forward_op! { impl Rem for Int256 { fn rem } }
 forward_assign_op! { impl RemAssign for Int256 { fn rem_assign } }
-
-forward_unary_op! { impl Neg for Int256 { fn neg } }
