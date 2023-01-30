@@ -22,7 +22,7 @@ impl Int256 {
     /// o Uint256
     pub fn to_uint256(&self) -> Option<Uint256> {
         if *self < Int256::zero() {
-            return None;
+            None
         } else {
             Some(Uint256(self.0.unsigned_abs()))
         }

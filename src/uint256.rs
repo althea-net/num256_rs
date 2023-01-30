@@ -175,7 +175,7 @@ impl fmt::LowerHex for Uint256 {
                 write!(f, "{}", &pad)?;
             }
         }
-        write!(f, "{}", hex_str)
+        write!(f, "{hex_str}")
     }
 }
 
@@ -193,7 +193,7 @@ impl fmt::UpperHex for Uint256 {
                 write!(f, "{}", &pad)?;
             }
         }
-        write!(f, "{}", hex_str)
+        write!(f, "{hex_str}")
     }
 }
 
@@ -393,19 +393,19 @@ fn to_hex() {
         .parse()
         .unwrap();
     assert_eq!(
-        format!("{:#x}", lhs),
+        format!("{lhs:#x}"),
         "0xbabababababababababababababababababababababababababababababababa"
     );
     assert_eq!(
-        format!("{:x}", lhs),
+        format!("{lhs:x}"),
         "babababababababababababababababababababababababababababababababa"
     );
     assert_eq!(
-        format!("{:X}", lhs),
+        format!("{lhs:X}"),
         "BABABABABABABABABABABABABABABABABABABABABABABABABABABABABABABABA"
     );
     assert_eq!(
-        format!("{:#X}", lhs),
+        format!("{lhs:#X}"),
         "0xBABABABABABABABABABABABABABABABABABABABABABABABABABABABABABABABA"
     );
 }
@@ -416,19 +416,19 @@ fn to_hex_with_padding() {
         .parse()
         .unwrap();
     assert_eq!(
-        format!("{:#066x}", lhs),
+        format!("{lhs:#066x}"),
         "0x0000000000bababababababababababababababababababababababababababa"
     );
     assert_eq!(
-        format!("{:064x}", lhs),
+        format!("{lhs:064x}"),
         "0000000000bababababababababababababababababababababababababababa"
     );
     assert_eq!(
-        format!("{:064X}", lhs),
+        format!("{lhs:064X}"),
         "0000000000BABABABABABABABABABABABABABABABABABABABABABABABABABABA"
     );
     assert_eq!(
-        format!("{:#066X}", lhs),
+        format!("{lhs:#066X}"),
         "0x0000000000BABABABABABABABABABABABABABABABABABABABABABABABABABABA"
     );
 }
@@ -450,7 +450,7 @@ fn into_array() {
 fn check_display() {
     let val = Uint256::max_value();
     assert_eq!(
-        format!("{}", val),
+        format!("{val}"),
         "115792089237316195423570985008687907853269984665640564039457584007913129639935"
     );
     assert_eq!(
