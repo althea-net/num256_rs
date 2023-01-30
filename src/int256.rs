@@ -39,10 +39,9 @@ impl Num for Int256 {
     fn from_str_radix(str: &str, radix: u32) -> Result<Self, Self::FromStrRadixErr> {
         let res = Int256(BInt::<256>::from_str_radix(str, radix)?);
         if res > Int256::max_value() {
-            return Err(Self::FromStrRadixErr::new(IntErrorKind::PosOverflow))
-
+            return Err(Self::FromStrRadixErr::new(IntErrorKind::PosOverflow));
         } else if res < Int256::min_value() {
-            return Err(Self::FromStrRadixErr::new(IntErrorKind::NegOverflow))
+            return Err(Self::FromStrRadixErr::new(IntErrorKind::NegOverflow));
         }
         Ok(res)
     }

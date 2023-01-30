@@ -7,16 +7,12 @@ extern crate serde_derive;
 extern crate serde;
 
 use num256::{Int256, Uint256};
-use num_traits::{Bounded, Zero, Signed, CheckedAdd, CheckedSub, ToPrimitive, CheckedMul};
+use num_traits::{Bounded, CheckedAdd, CheckedMul, CheckedSub, Signed, ToPrimitive, Zero};
 use std::ops::{Add, Div, Sub};
 
 lazy_static! {
-    static ref BIGGEST_UINT: Uint256 = {
-        Uint256::max_value()
-    };
-    static ref BIGGEST_INT_AS_UINT: Uint256 = {
-        Int256::max_value().to_uint256().unwrap()
-    };
+    static ref BIGGEST_UINT: Uint256 = Uint256::max_value();
+    static ref BIGGEST_INT_AS_UINT: Uint256 = Int256::max_value().to_uint256().unwrap();
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -28,7 +24,7 @@ pub struct MyStruct {
 #[test]
 fn serialize() {
     let struc = MyStruct {
-        uint: BIGGEST_UINT.clone(),
+        uint: *BIGGEST_UINT,
         int: Int256::min_value(),
     };
 
@@ -72,7 +68,7 @@ fn test_from_uint() {
 #[test]
 #[should_panic]
 fn test_from_uint_to_int() {
-    let uint = BIGGEST_UINT.clone();
+    let uint = *BIGGEST_UINT;
     let _res = uint.to_int256().unwrap();
 }
 
@@ -96,30 +92,30 @@ fn test_from_int() {
 #[test]
 #[should_panic]
 fn test_uint_add_panic() {
-    let _val = BIGGEST_UINT.clone() + Uint256::from(1u32);
+    let _val = *BIGGEST_UINT + Uint256::from(1u32);
 }
 
 #[test]
 #[should_panic]
 fn test_uint_add_assign_panic() {
-    let mut val = BIGGEST_UINT.clone();
+    let mut val = *BIGGEST_UINT;
     val += Uint256::from(1u32);
 }
 
 #[test]
 fn test_uint_add_no_panic() {
-    let _val = BIGGEST_UINT.clone() + Uint256::from(0u32);
+    let _val = *BIGGEST_UINT + Uint256::from(0u32);
 }
 
 #[test]
 #[should_panic]
 fn test_uint_from_add_panic() {
-    let _val = BIGGEST_UINT.clone().add(Uint256::from(1u8));
+    let _val = (*BIGGEST_UINT).add(Uint256::from(1u8));
 }
 
 #[test]
 fn test_uint_from_add_no_panic() {
-    let _val = BIGGEST_UINT.clone().add(Uint256::zero());
+    let _val = (*BIGGEST_UINT).add(Uint256::zero());
 }
 
 #[test]
@@ -153,7 +149,7 @@ fn test_uint_from_sub_no_panic() {
 #[test]
 #[should_panic]
 fn test_uint_mul_panic() {
-    let _val: Uint256 = BIGGEST_UINT.clone() * Uint256::from(2u8);
+    let _val: Uint256 = *BIGGEST_UINT * Uint256::from(2u8);
 }
 
 #[test]
@@ -173,13 +169,13 @@ fn test_uint_mul_no_panic() {
 #[test]
 #[should_panic]
 fn test_uint_from_mul_panic() {
-    let _val = BIGGEST_UINT.clone() * Uint256::from(2u8);
+    let _val = *BIGGEST_UINT * Uint256::from(2u8);
 }
 
 #[test]
 #[should_panic]
 fn test_uint_from_mul_assign_panic() {
-    let mut val = BIGGEST_UINT.clone();
+    let mut val = *BIGGEST_UINT;
     val *= Uint256::from(2u8);
 }
 
@@ -191,7 +187,7 @@ fn test_uint_from_mul_no_panic() {
 #[test]
 #[should_panic]
 fn test_uint_div_panic() {
-    let _val = BIGGEST_UINT.clone() / Uint256::zero();
+    let _val = *BIGGEST_UINT / Uint256::zero();
 }
 
 #[test]
@@ -202,7 +198,7 @@ fn test_uint_div_no_panic() {
 #[test]
 #[should_panic]
 fn test_uint_from_div_panic() {
-    let _val = BIGGEST_UINT.clone().div(Uint256::from(0u8));
+    let _val = (*BIGGEST_UINT).div(Uint256::from(0u8));
 }
 
 #[test]
@@ -466,7 +462,7 @@ fn test_negate() {
 #[test]
 #[should_panic]
 fn test_uint_to_int() {
-    let value = BIGGEST_UINT.clone();
+    let value = *BIGGEST_UINT;
     value.to_int256().unwrap();
 }
 

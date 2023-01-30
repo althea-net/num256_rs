@@ -39,7 +39,7 @@ impl ParseError {
 
 impl Display for ParseError {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        write!(f, "{} {}", "(num256)", self.description())
+        write!(f, "(num256) {}", self.description())
     }
 }
 
@@ -51,6 +51,8 @@ impl Debug for ParseError {
 
 impl From<bnum::errors::ParseIntError> for ParseError {
     fn from(value: bnum::errors::ParseIntError) -> Self {
-        ParseError { kind: value.kind().clone() }
+        ParseError {
+            kind: value.kind().clone(),
+        }
     }
 }

@@ -10,7 +10,10 @@ use serde::{Deserialize, Deserializer, Serializer};
 use std::default::Default;
 use std::fmt;
 use std::num::IntErrorKind;
-use std::ops::{Add, AddAssign, Deref, Div, DivAssign, Mul, MulAssign, Sub, SubAssign, Shl, Shr, ShlAssign, ShrAssign, Rem, RemAssign};
+use std::ops::{
+    Add, AddAssign, Deref, Div, DivAssign, Mul, MulAssign, Rem, RemAssign, Shl, ShlAssign, Shr,
+    ShrAssign, Sub, SubAssign,
+};
 use std::str::FromStr;
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
@@ -20,22 +23,14 @@ impl Uint256 {
     pub fn from_le_bytes(slice: &[u8]) -> Uint256 {
         // if the length is less than 32, pass that length
         // if it is greater truncate
-        let end = if slice.len() <= 32 {
-            slice.len()
-        } else {
-            32
-        };
+        let end = if slice.len() <= 32 { slice.len() } else { 32 };
         Uint256(BUint::from_le_slice(&slice[0..end]).unwrap())
     }
     pub fn from_be_bytes(slice: &[u8]) -> Uint256 {
         // if the length is less than 32, pass that length
         // if it is greater truncate
-        let end = if slice.len() <= 32 {
-            slice.len()
-        } else {
-            32
-        };
-    Uint256(BUint::from_be_slice(&slice[0..end]).unwrap())
+        let end = if slice.len() <= 32 { slice.len() } else { 32 };
+        Uint256(BUint::from_be_slice(&slice[0..end]).unwrap())
     }
     pub fn to_be_bytes(&self) -> [u8; 32] {
         let mut res = self.to_le_bytes();
@@ -81,10 +76,9 @@ impl Num for Uint256 {
     fn from_str_radix(str: &str, radix: u32) -> Result<Self, Self::FromStrRadixErr> {
         let res = Uint256(BUint::<256>::from_str_radix(str, radix)?);
         if res > Uint256::max_value() {
-            return Err(Self::FromStrRadixErr::new(IntErrorKind::PosOverflow))
-
+            return Err(Self::FromStrRadixErr::new(IntErrorKind::PosOverflow));
         } else if res < Uint256::min_value() {
-            return Err(Self::FromStrRadixErr::new(IntErrorKind::NegOverflow))
+            return Err(Self::FromStrRadixErr::new(IntErrorKind::NegOverflow));
         }
         Ok(res)
     }
@@ -474,7 +468,8 @@ fn check_display() {
 
 #[test]
 fn check_from_str_radix_overflow() {
-    let super_huge = "115792089237316195423570985008687907853369984665640564039457584007913129639935";
+    let super_huge =
+        "115792089237316195423570985008687907853369984665640564039457584007913129639935";
     let val = Uint256::from_str_radix(super_huge, 10);
     assert!(val.is_err())
 }
