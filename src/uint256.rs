@@ -9,6 +9,7 @@ use serde::ser::Serialize;
 use serde::{Deserialize, Deserializer, Serializer};
 use std::default::Default;
 use std::fmt;
+use std::num::IntErrorKind;
 use std::ops::{Add, AddAssign, Deref, Div, DivAssign, Mul, MulAssign, Sub, SubAssign, Shl, Shr, ShlAssign, ShrAssign, Rem, RemAssign};
 use std::str::FromStr;
 
@@ -59,9 +60,6 @@ impl Uint256 {
         }
         res
     }
-    pub fn from_str_radix(s: &str, radix: u32) -> Result<Uint256, ParseIntError> {
-        BUint::<256>::from_str_radix(s, radix).map(Uint256)
-    }
     /// Converts value to a signed 256 bit integer
     pub fn to_int256(&self) -> Option<Int256> {
         if *self <= Int256::max_value().to_uint256().unwrap() {
@@ -74,6 +72,21 @@ impl Uint256 {
     /// Square root
     pub fn sqrt(&self) -> Uint256 {
         self.0.ilog(self.0).into()
+    }
+}
+
+impl Num for Uint256 {
+    type FromStrRadixErr = crate::error::ParseError;
+
+    fn from_str_radix(str: &str, radix: u32) -> Result<Self, Self::FromStrRadixErr> {
+        let res = Uint256(BUint::<256>::from_str_radix(str, radix)?);
+        if res > Uint256::max_value() {
+            return Err(Self::FromStrRadixErr::new(IntErrorKind::PosOverflow))
+
+        } else if res < Uint256::min_value() {
+            return Err(Self::FromStrRadixErr::new(IntErrorKind::NegOverflow))
+        }
+        Ok(res)
     }
 }
 
@@ -457,4 +470,11 @@ fn check_display() {
         val.to_string(),
         "115792089237316195423570985008687907853269984665640564039457584007913129639935"
     );
+}
+
+#[test]
+fn check_from_str_radix_overflow() {
+    let super_huge = "115792089237316195423570985008687907853369984665640564039457584007913129639935";
+    let val = Uint256::from_str_radix(super_huge, 10);
+    assert!(val.is_err())
 }

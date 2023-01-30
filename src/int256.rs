@@ -1,4 +1,3 @@
-use bnum::errors::ParseIntError;
 use bnum::BInt;
 use num_traits::{
     Bounded, CheckedAdd, CheckedDiv, CheckedMul, CheckedSub, FromPrimitive, Num, One, Signed,
@@ -7,6 +6,7 @@ use num_traits::{
 use serde::ser::Serialize;
 use serde::{Deserialize, Deserializer, Serializer};
 use std::fmt::{self};
+use std::num::IntErrorKind;
 use std::ops::{
     Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Rem, RemAssign, Sub, SubAssign,
 };
@@ -34,11 +34,17 @@ impl Int256 {
 }
 
 impl Num for Int256 {
-    type FromStrRadixErr = bnum::errors::ParseIntError;
+    type FromStrRadixErr = crate::error::ParseError;
 
     fn from_str_radix(str: &str, radix: u32) -> Result<Self, Self::FromStrRadixErr> {
-        let res = BInt::<256>::from_str_radix(str, radix)?;
-        Ok(Int256(res))
+        let res = Int256(BInt::<256>::from_str_radix(str, radix)?);
+        if res > Int256::max_value() {
+            return Err(Self::FromStrRadixErr::new(IntErrorKind::PosOverflow))
+
+        } else if res < Int256::min_value() {
+            return Err(Self::FromStrRadixErr::new(IntErrorKind::NegOverflow))
+        }
+        Ok(res)
     }
 }
 
@@ -142,7 +148,7 @@ impl<'a> From<&'a Int256> for Int256 {
 }
 
 impl FromStr for Int256 {
-    type Err = ParseIntError;
+    type Err = crate::error::ParseError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(Int256(BInt::<256>::from_str_radix(s, 10)?))
     }
@@ -301,3 +307,15 @@ forward_assign_op! { impl DivAssign for Int256 { fn div_assign } }
 
 forward_op! { impl Rem for Int256 { fn rem } }
 forward_assign_op! { impl RemAssign for Int256 { fn rem_assign } }
+
+#[test]
+fn check_from_str_radix_overflow_underflow() {
+    let super_huge =
+        "115792089237316195423570985008687907853369984665640564039457584007913129639935";
+    let super_small =
+        "-67896044618658097711785492504343953926634992332820282019728792003956564819968";
+    let val = Int256::from_str_radix(super_huge, 10);
+    assert!(val.is_err());
+    let val = Int256::from_str_radix(super_small, 10);
+    assert!(val.is_err());
+}
