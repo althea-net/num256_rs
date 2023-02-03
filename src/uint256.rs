@@ -1,5 +1,4 @@
 pub use super::Int256;
-use bnum::errors::ParseIntError;
 use bnum::BUint;
 use num_traits::{
     Bounded, CheckedAdd, CheckedDiv, CheckedMul, CheckedSub, FromPrimitive, Num, One, ToPrimitive,
@@ -146,7 +145,7 @@ impl Bounded for Uint256 {
 }
 
 impl FromStr for Uint256 {
-    type Err = ParseIntError;
+    type Err = crate::error::ParseError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if let Some(val) = s.strip_prefix("0x") {
             Ok(BUint::<256>::from_str_radix(val, 16).map(Uint256)?)
