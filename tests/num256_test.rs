@@ -483,6 +483,9 @@ fn test_biggest_unsigned_to_int() {
 
 #[test]
 fn test_abs() {
-    let very_small: Int256 = Int256::min_value();
-    let _very_large: Uint256 = very_small.abs().to_uint256().unwrap();
+    // if we don't subtract a small number we will overflow since Uint256 max
+    // is one smaller than min
+    let very_small: Int256 = Int256::min_value() + 50.into();
+    let abs = very_small.abs();
+    let _very_large: Uint256 = abs.to_uint256().unwrap();
 }

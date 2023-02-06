@@ -1,4 +1,4 @@
-use bnum::BInt;
+use bnum::types::I256;
 use num_traits::{
     Bounded, CheckedAdd, CheckedDiv, CheckedMul, CheckedSub, FromPrimitive, Num, One, Signed,
     ToPrimitive, Zero,
@@ -15,7 +15,7 @@ use std::str::FromStr;
 pub use crate::uint256::Uint256;
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
-pub struct Int256(pub BInt<256>);
+pub struct Int256(pub I256);
 
 impl Int256 {
     /// Checked conversion t
@@ -37,7 +37,7 @@ impl Num for Int256 {
     type FromStrRadixErr = crate::error::ParseError;
 
     fn from_str_radix(str: &str, radix: u32) -> Result<Self, Self::FromStrRadixErr> {
-        let res = Int256(BInt::<256>::from_str_radix(str, radix)?);
+        let res = Int256(I256::from_str_radix(str, radix)?);
         if res > Int256::max_value() {
             return Err(Self::FromStrRadixErr::new(IntErrorKind::PosOverflow));
         } else if res < Int256::min_value() {
@@ -49,13 +49,13 @@ impl Num for Int256 {
 
 impl One for Int256 {
     fn one() -> Self {
-        Int256(BInt::<256>::ONE)
+        Int256(I256::ONE)
     }
 }
 
 impl Zero for Int256 {
     fn zero() -> Self {
-        Int256(BInt::<256>::ZERO)
+        Int256(I256::ZERO)
     }
 
     fn is_zero(&self) -> bool {
@@ -65,12 +65,12 @@ impl Zero for Int256 {
 
 impl FromPrimitive for Int256 {
     fn from_i64(n: i64) -> Option<Self> {
-        let val: BInt<256> = n.into();
+        let val: I256 = n.into();
         Some(Int256(val))
     }
 
     fn from_u64(n: u64) -> Option<Self> {
-        let val: BInt<256> = n.into();
+        let val: I256 = n.into();
         Some(Int256(val))
     }
 }
@@ -121,7 +121,7 @@ macro_rules! impl_from_int {
         impl From<$T> for Int256 {
             #[inline]
             fn from(n: $T) -> Self {
-                Int256(BInt::<256>::from(n))
+                Int256(I256::from(n))
             }
         }
     };
@@ -149,7 +149,7 @@ impl<'a> From<&'a Int256> for Int256 {
 impl FromStr for Int256 {
     type Err = crate::error::ParseError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(Int256(BInt::<256>::from_str_radix(s, 10)?))
+        Ok(Int256(I256::from_str_radix(s, 10)?))
     }
 }
 
@@ -192,7 +192,7 @@ impl<'de> Deserialize<'de> for Int256 {
     {
         let s = String::deserialize(deserializer)?;
 
-        BInt::<256>::from_str(&s)
+        I256::from_str(&s)
             .map(Int256)
             .map_err(serde::de::Error::custom)
     }
@@ -228,15 +228,7 @@ macro_rules! forward_op {
 
             fn $method(self, $type_(b): $type_) -> $type_ {
                 let $type_(a) = self;
-                let res = $type_(a.$method(&b));
-                // bounds check
-                if res > Int256::max_value() {
-                    panic!("attempt to {} with overflow", stringify!($method));
-                } else if res < Int256::min_value() {
-                    panic!("attempt to {} with underflow", stringify!($method));
-                } else {
-                    res
-                }
+                $type_(a.$method(&b))
             }
         }
     };
@@ -250,15 +242,7 @@ macro_rules! forward_checked_op {
                 let $type_(a) = self;
                 let value = a.$method(*b);
                 match value {
-                    Some(value) => {
-                        let value = Int256(value);
-                        // bounds check
-                        if value > Int256::max_value() || value < Int256::min_value() {
-                            None
-                        } else {
-                            Some(value)
-                        }
-                    }
+                    Some(value) => Some(Int256(value)),
                     None => None,
                 }
             }
@@ -275,13 +259,6 @@ macro_rules! forward_assign_op {
                 {
                     let a = &mut self.0;
                     a.$method(b);
-                }
-                // bounds check
-                if *self > Int256::max_value() {
-                    panic!("attempt to {} with overflow", stringify!($method));
-                }
-                if *self < Int256::min_value() {
-                    panic!("attempt to {} with underflow", stringify!($method));
                 }
             }
         }
