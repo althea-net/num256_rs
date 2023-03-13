@@ -73,6 +73,16 @@ impl FromPrimitive for Int256 {
         let val: I256 = n.into();
         Some(Int256(val))
     }
+
+    fn from_i128(n: i128) -> Option<Self> {
+        let val: I256 = n.into();
+        Some(Int256(val))
+    }
+
+    fn from_u128(n: u128) -> Option<Self> {
+        let val: I256 = n.into();
+        Some(Int256(val))
+    }
 }
 
 impl ToPrimitive for Int256 {
@@ -84,6 +94,20 @@ impl ToPrimitive for Int256 {
     }
 
     fn to_u64(&self) -> Option<u64> {
+        match self.0.try_into() {
+            Ok(v) => Some(v),
+            Err(_) => None,
+        }
+    }
+
+    fn to_i128(&self) -> Option<i128> {
+        match self.0.try_into() {
+            Ok(v) => Some(v),
+            Err(_) => None,
+        }
+    }
+
+    fn to_u128(&self) -> Option<u128> {
         match self.0.try_into() {
             Ok(v) => Some(v),
             Err(_) => None,
@@ -294,4 +318,62 @@ fn check_from_str_radix_overflow_underflow() {
     assert!(val.is_err());
     let val = Int256::from_str_radix(super_small, 10);
     assert!(val.is_err());
+}
+
+/// Check the ToPrimitive impl for +-[0, 100k] and +-[2^32-100, ~2^32+100k]
+#[test]
+fn test_to_primitive_64() {
+    use num_traits::ToPrimitive;
+    let u32_max: u64 = std::u32::MAX.into();
+    let mut i = 0u64;
+    while i < 100_000 {
+        let i_int256: Int256 = i.into();
+        assert_eq!(i, (i_int256).to_u64().unwrap());
+        assert_eq!(i as i64, (i_int256).to_i64().unwrap());
+        let neg_int256: Int256 = i_int256.neg();
+        assert_eq!(-(i as i64), (neg_int256).to_i64().unwrap());
+        i += 1
+    }
+
+    let mut i: u64 = u32_max - 100;
+    let end = i + 100_000;
+    while i < end {
+        let i_int256: Int256 = i.into();
+        assert_eq!(i, i_int256.to_u64().unwrap());
+        if i < u32_max {
+            assert_eq!(i as i64, i_int256.to_i64().unwrap());
+            let neg_int256: Int256 = i_int256.neg();
+            assert_eq!(-(i as i64), neg_int256.to_i64().unwrap());
+        }
+
+        i += 1
+    }
+}
+
+/// Check the ToPrimitive impl for +-[0, 100k] and +-[2^64-100, ~2^64+100k]
+#[test]
+fn test_to_primitive_128() {
+    let u64_max: u128 = std::u64::MAX.into();
+    use num_traits::ToPrimitive;
+    let mut i = 0u128;
+    while i < 100_000 {
+        let i_int256: Int256 = i.into();
+        assert_eq!(i, i_int256.to_u128().unwrap());
+        assert_eq!(i as i128, i_int256.to_i128().unwrap());
+        let neg_int256: Int256 = i_int256.neg();
+        assert_eq!(-(i as i128), (neg_int256).to_i128().unwrap());
+        i += 1
+    }
+    let mut i: u128 = u64_max - 100;
+    let end = i + 100_000;
+    while i < end {
+        let i_int256: Int256 = i.into();
+        assert_eq!(i, i_int256.to_u128().unwrap());
+        if i < u64_max {
+            assert_eq!(i as i128, i_int256.to_i128().unwrap());
+            let neg_int256: Int256 = i_int256.neg();
+            assert_eq!(-(i as i128), neg_int256.to_i128().unwrap());
+        }
+        i += 1
+    }
 }

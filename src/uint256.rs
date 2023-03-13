@@ -113,6 +113,19 @@ impl FromPrimitive for Uint256 {
         let val: U256 = n.into();
         Some(Uint256(val))
     }
+
+    fn from_i128(n: i128) -> Option<Self> {
+        let val: Result<U256, _> = n.try_into();
+        match val {
+            Ok(v) => Some(Uint256(v)),
+            Err(_) => None,
+        }
+    }
+
+    fn from_u128(n: u128) -> Option<Self> {
+        let val: U256 = n.into();
+        Some(Uint256(val))
+    }
 }
 
 impl ToPrimitive for Uint256 {
@@ -124,6 +137,20 @@ impl ToPrimitive for Uint256 {
     }
 
     fn to_u64(&self) -> Option<u64> {
+        match self.0.try_into() {
+            Ok(v) => Some(v),
+            Err(_) => None,
+        }
+    }
+
+    fn to_i128(&self) -> Option<i128> {
+        match self.0.try_into() {
+            Ok(v) => Some(v),
+            Err(_) => None,
+        }
+    }
+
+    fn to_u128(&self) -> Option<u128> {
         match self.0.try_into() {
             Ok(v) => Some(v),
             Err(_) => None,
@@ -455,4 +482,54 @@ fn check_from_str_radix_overflow() {
         "115792089237316195423570985008687907853369984665640564039457584007913129639935";
     let val = Uint256::from_str_radix(super_huge, 10);
     assert!(val.is_err())
+}
+
+/// Check the ToPrimitive impl for [0, 100k] + [2^32-100, ~2^32+100k]
+#[test]
+fn test_to_primitive_64() {
+    let u32_max: u64 = std::u32::MAX.into();
+    use num_traits::ToPrimitive;
+    let mut i = 0u64;
+    while i < 100_000 {
+        let i_uint256: Uint256 = i.into();
+        assert_eq!(i, (i_uint256).to_u64().unwrap());
+        assert_eq!(i as i64, (i_uint256).to_i64().unwrap());
+        i += 1
+    }
+
+    let mut i: u64 = u32_max - 100;
+    let end = i + 100_000;
+    while i < end {
+        let i_uint256: Uint256 = i.into();
+        assert_eq!(i, i_uint256.to_u64().unwrap());
+        if i < u32_max {
+            assert_eq!(i as i64, i_uint256.to_i64().unwrap());
+        }
+        i += 1
+    }
+}
+
+/// Check the ToPrimitive impl for [0, 100k] + [2^64-100, ~2^64+100k]
+/// The default ToPrimitive impl breaks on values above 2^64
+#[test]
+fn test_to_primitive_128() {
+    let u64_max: u128 = std::u64::MAX.into();
+    use num_traits::ToPrimitive;
+    let mut i = 0u128;
+    while i < 100_000 {
+        let i_uint256: Uint256 = i.into();
+        assert_eq!(i, i_uint256.to_u128().unwrap());
+        assert_eq!(i as i128, i_uint256.to_i128().unwrap());
+        i += 1
+    }
+    let mut i: u128 = u64_max - 100;
+    let end = i + 100_000;
+    while i < end {
+        let i_uint256: Uint256 = i.into();
+        assert_eq!(i, i_uint256.to_u128().unwrap());
+        if i < u64_max {
+            assert_eq!(i as i128, i_uint256.to_i128().unwrap());
+        }
+        i += 1
+    }
 }
