@@ -1,4 +1,5 @@
 use bnum::types::I256;
+use bnum::BInt;
 use num_traits::{
     Bounded, CheckedAdd, CheckedDiv, CheckedMul, CheckedSub, FromPrimitive, Num, One, Signed,
     ToPrimitive, Zero,
@@ -18,8 +19,48 @@ pub use crate::uint256::Uint256;
 pub struct Int256(pub I256);
 
 impl Int256 {
-    /// Checked conversion t
-    /// o Uint256
+    pub fn from_le_bytes(slice: &[u8]) -> Int256 {
+        // if the length is less than 32, pass that length
+        // if it is greater truncate
+        let end = if slice.len() <= 32 { slice.len() } else { 32 };
+        Int256(BInt::from_le_slice(&slice[0..end]).unwrap())
+    }
+    pub fn from_be_bytes(slice: &[u8]) -> Int256 {
+        // if the length is less than 32, pass that length
+        // if it is greater truncate
+        let end = if slice.len() <= 32 { slice.len() } else { 32 };
+        Int256(BInt::from_be_slice(&slice[0..end]).unwrap())
+    }
+    pub fn to_be_bytes(&self) -> [u8; 32] {
+        let mut res = self.to_le_bytes();
+        res.reverse();
+        res
+    }
+    pub fn to_le_bytes(&self) -> [u8; 32] {
+        let mut res: [u8; 32] = [0; 32];
+        // the only function available to access the internal int representation is a bit by bit query
+        // so in order to turn this into a 256bit array we must mask and shift this data into each byte
+        for i in 0usize..256 {
+            // the target byte and bit we are currently focused on
+            let byte_index = i / 8;
+            let bit_index = i % 8;
+            // the bit we want to copy to the target
+            let bit = self.0.bit(i as u32);
+            // if true we mask a one with the byte at the right index
+            if bit {
+                let scratch_bit = 1u8 << bit_index;
+                res[byte_index] |= scratch_bit
+            }
+        }
+        res
+    }
+
+    /// Square root
+    pub fn sqrt(&self) -> Uint256 {
+        self.0.ilog(self.0).into()
+    }
+
+    /// Checked conversion to Uint256
     pub fn to_uint256(&self) -> Option<Uint256> {
         if *self < Int256::zero() {
             None
@@ -375,5 +416,30 @@ fn test_to_primitive_128() {
             assert_eq!(-(i as i128), neg_int256.to_i128().unwrap());
         }
         i += 1
+    }
+}
+
+/// Check the implementations of to_be_bytes, to_le_bytes, from_be_bytes, from_le_bytes
+#[test]
+fn test_to_from_bytes() {
+    let to_from_be = |n: Int256| Int256::from_be_bytes(&n.to_be_bytes());
+    let to_from_le = |n: Int256| Int256::from_le_bytes(&n.to_le_bytes());
+
+    let n1 = Int256::from(-1i8);
+    let z = Int256::zero();
+    let p1 = Int256::from(1i8);
+    let p_u64max = Int256::from(std::u64::MAX);
+    let n_u64max = p_u64max.neg();
+    let p_u128max = Int256::from(std::u128::MAX);
+    let n_u128max = p_u128max.neg();
+    let int256_max = Int256::max_value();
+    let int256_min = Int256::min_value();
+    let test_cases = vec![
+        n1, z, p1, p_u64max, n_u64max, p_u128max, n_u128max, int256_max, int256_min,
+    ];
+
+    for tc in test_cases {
+        assert_eq!(tc, to_from_be(tc));
+        assert_eq!(tc, to_from_le(tc));
     }
 }
