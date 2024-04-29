@@ -1,7 +1,7 @@
 use bnum::types::I256;
 use bnum::BInt;
 use num_traits::{
-    Bounded, CheckedAdd, CheckedDiv, CheckedMul, CheckedSub, FromPrimitive, Num, One, Signed,
+    Bounded, CheckedAdd, CheckedDiv, CheckedMul, CheckedSub, FromPrimitive, Num, One, Pow, Signed,
     ToPrimitive, Zero,
 };
 use serde::ser::Serialize;
@@ -290,6 +290,14 @@ impl Signed for Int256 {
     }
     fn is_negative(&self) -> bool {
         self.0.is_negative()
+    }
+}
+
+impl Pow<u32> for Int256 {
+    type Output = Self;
+
+    fn pow(self, p: u32) -> Self::Output {
+        Int256(self.0.pow(p))
     }
 }
 

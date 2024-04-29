@@ -2,8 +2,8 @@ pub use super::Int256;
 use bnum::types::U256;
 use bnum::BUint;
 use num_traits::{
-    Bounded, CheckedAdd, CheckedDiv, CheckedMul, CheckedSub, FromPrimitive, Num, One, ToPrimitive,
-    Zero,
+    Bounded, CheckedAdd, CheckedDiv, CheckedMul, CheckedSub, FromPrimitive, Num, One, Pow,
+    ToPrimitive, Zero,
 };
 use serde::ser::Serialize;
 use serde::{Deserialize, Deserializer, Serializer};
@@ -306,6 +306,14 @@ impl TryFrom<Int256> for Uint256 {
 impl Into<[u8; 32]> for Uint256 {
     fn into(self) -> [u8; 32] {
         self.to_be_bytes()
+    }
+}
+
+impl Pow<u32> for Uint256 {
+    type Output = Self;
+
+    fn pow(self, p: u32) -> Self::Output {
+        Uint256(self.0.pow(p))
     }
 }
 
