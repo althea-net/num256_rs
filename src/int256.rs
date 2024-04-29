@@ -218,6 +218,14 @@ impl FromStr for Int256 {
     }
 }
 
+impl TryFrom<&str> for Int256 {
+    type Error = crate::error::ParseError;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        value.parse()
+    }
+}
+
 impl TryFrom<Uint256> for Int256 {
     type Error = ();
 

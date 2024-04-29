@@ -183,6 +183,14 @@ impl FromStr for Uint256 {
     }
 }
 
+impl TryFrom<&str> for Uint256 {
+    type Error = crate::error::ParseError;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        value.parse()
+    }
+}
+
 impl fmt::Display for Uint256 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", &self.0.to_str_radix(10))
