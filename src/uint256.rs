@@ -504,7 +504,7 @@ fn check_from_str_radix_overflow() {
 /// Check the ToPrimitive impl for [0, 100k] + [2^32-100, ~2^32+100k]
 #[test]
 fn test_to_primitive_64() {
-    let u32_max: u64 = std::u32::MAX.into();
+    let u32_max: u64 = u32::MAX.into();
     use num_traits::ToPrimitive;
     let mut i = 0u64;
     while i < 100_000 {
@@ -530,7 +530,7 @@ fn test_to_primitive_64() {
 /// The default ToPrimitive impl breaks on values above 2^64
 #[test]
 fn test_to_primitive_128() {
-    let u64_max: u128 = std::u64::MAX.into();
+    let u64_max: u128 = u64::MAX.into();
     use num_traits::ToPrimitive;
     let mut i = 0u128;
     while i < 100_000 {

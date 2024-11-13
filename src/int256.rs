@@ -382,7 +382,7 @@ fn check_from_str_radix_overflow_underflow() {
 #[test]
 fn test_to_primitive_64() {
     use num_traits::ToPrimitive;
-    let u32_max: u64 = std::u32::MAX.into();
+    let u32_max: u64 = u32::MAX.into();
     let mut i = 0u64;
     while i < 100_000 {
         let i_int256: Int256 = i.into();
@@ -411,7 +411,7 @@ fn test_to_primitive_64() {
 /// Check the ToPrimitive impl for +-[0, 100k] and +-[2^64-100, ~2^64+100k]
 #[test]
 fn test_to_primitive_128() {
-    let u64_max: u128 = std::u64::MAX.into();
+    let u64_max: u128 = u64::MAX.into();
     use num_traits::ToPrimitive;
     let mut i = 0u128;
     while i < 100_000 {
@@ -445,9 +445,9 @@ fn test_to_from_bytes() {
     let n1 = Int256::from(-1i8);
     let z = Int256::zero();
     let p1 = Int256::from(1i8);
-    let p_u64max = Int256::from(std::u64::MAX);
+    let p_u64max = Int256::from(u64::MAX);
     let n_u64max = p_u64max.neg();
-    let p_u128max = Int256::from(std::u128::MAX);
+    let p_u128max = Int256::from(u128::MAX);
     let n_u128max = p_u128max.neg();
     let int256_max = Int256::max_value();
     let int256_min = Int256::min_value();
