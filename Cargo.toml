@@ -13,7 +13,7 @@ edition = '2021'
 
 [dependencies]
 serde = "1.0"
-bnum = {version = "0.5.0", features = ["num-traits"]}
+bnum = {version = "0.5.0", features = ["numtraits"]}
 num-traits = "0.2"
 
 [dev-dependencies]

@@ -321,7 +321,7 @@ macro_rules! forward_checked_op {
         impl $trait_ for $type_ {
             fn $method(&self, $type_(b): &$type_) -> Option<$type_> {
                 let $type_(a) = self;
-                let value = a.$method(*b);
+                let value = a.$method(b);
                 match value {
                     Some(value) => Some(Int256(value)),
                     None => None,
