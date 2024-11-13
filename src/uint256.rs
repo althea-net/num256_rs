@@ -1,6 +1,7 @@
 pub use super::Int256;
 use bnum::types::U256;
 use bnum::BUint;
+use num_integer::Roots;
 use num_traits::{
     Bounded, CheckedAdd, CheckedDiv, CheckedMul, CheckedSub, FromPrimitive, Num, One, Pow,
     ToPrimitive, Zero,
@@ -66,7 +67,7 @@ impl Uint256 {
 
     /// Square root
     pub fn sqrt(&self) -> Uint256 {
-        self.0.ilog(self.0).into()
+        Self(self.0.sqrt())
     }
 }
 
@@ -547,5 +548,17 @@ fn test_to_primitive_128() {
             assert_eq!(i as i128, i_uint256.to_i128().unwrap());
         }
         i += 1
+    }
+}
+
+#[test]
+fn test_sqrt() {
+    use rand::prelude::*;
+
+    for _ in 1..100000 {
+        let r: u128 = random();
+        let n = Uint256::from(r);
+        let sqrt = (n.mul(n)).sqrt();
+        assert!(sqrt == n);
     }
 }

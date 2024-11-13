@@ -1,5 +1,6 @@
 use bnum::types::I256;
 use bnum::BInt;
+use num_integer::Roots;
 use num_traits::{
     Bounded, CheckedAdd, CheckedDiv, CheckedMul, CheckedSub, FromPrimitive, Num, One, Pow, Signed,
     ToPrimitive, Zero,
@@ -57,7 +58,7 @@ impl Int256 {
 
     /// Square root
     pub fn sqrt(&self) -> Uint256 {
-        self.0.ilog(self.0).into()
+        Uint256(self.0.sqrt().unsigned_abs())
     }
 
     /// Checked conversion to Uint256
@@ -457,5 +458,17 @@ fn test_to_from_bytes() {
     for tc in test_cases {
         assert_eq!(tc, to_from_be(tc));
         assert_eq!(tc, to_from_le(tc));
+    }
+}
+
+#[test]
+fn test_sqrt() {
+    use rand::prelude::*;
+
+    for _ in 1..100000 {
+        let r: i128 = random();
+        let n = Int256::from(r.abs());
+        let sqrt = (n.mul(n)).sqrt();
+        assert!(sqrt == n.to_uint256().unwrap());
     }
 }
